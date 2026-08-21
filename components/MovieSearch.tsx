@@ -1,21 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
-export default function MovieSearch() {
+function MovieSearchInput() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  const [query, setQuery] = useState(
-    searchParams.get("q") || ""
-  );
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const value = query.trim();
 
-    // Don't search empty text
     if (!value) {
       if (pathname === "/movie/search") {
         router.push("/movie");
@@ -88,7 +84,7 @@ export default function MovieSearch() {
           "
         />
 
-        {/* Loading indicator while typing */}
+        {/* Loading indicator */}
         {query.trim() && (
           <span
             className="
@@ -106,4 +102,8 @@ export default function MovieSearch() {
       </div>
     </div>
   );
+}
+
+export default function MovieSearch() {
+  return <MovieSearchInput />;
 }

@@ -1,30 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
-export default function TVSearch() {
+function TVSearchInput() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  const [query, setQuery] = useState(
-    searchParams.get("q") || ""
-  );
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const value = query.trim();
 
-    // Empty search
+    // Don't search empty text
     if (!value) {
       if (pathname === "/tv/search") {
         router.push("/tv");
       }
-
       return;
     }
 
-    // Wait until the user stops typing
     const timer = setTimeout(() => {
       router.push(
         `/tv/search?q=${encodeURIComponent(value)}`
@@ -103,10 +98,13 @@ export default function TVSearch() {
               border-green-400/30
               border-t-green-400
             "
-            aria-hidden="true"
           />
         )}
       </div>
     </div>
   );
-} 
+}
+
+export default function TVSearch() {
+  return <TVSearchInput />;
+}

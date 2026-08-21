@@ -114,7 +114,7 @@ function MovieRow({
   movies,
 }: {
   title: string;
-  movies: Movie[];
+  movies: (Movie | ContinueWatchingMovie)[];
 }) {
   if (!movies.length) {
     return null;

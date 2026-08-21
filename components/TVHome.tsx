@@ -132,7 +132,7 @@ function TVRow({
   shows,
 }: {
   title: string;
-  shows: TVShow[];
+  shows: (TVShow | ContinueWatchingTV)[];
 }) {
   /*
    * Keep the section visible even when TMDB
