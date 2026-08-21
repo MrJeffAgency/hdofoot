@@ -1,26 +1,391 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --card: oklch(1 0 0);
+  --card-hover: #121821;
+  --border: oklch(0.922 0 0);
+  --muted: oklch(0.97 0 0);
+  --accent: oklch(0.97 0 0);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(34, 197, 94, 0.08),
+      transparent 30%
+    ),
+    var(--background);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080b10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #26303d;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #344152;
+}
+
+/* =========================================================
+   LIVE PULSE
+   ========================================================= */
+
+@keyframes livePulse {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.18;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.3;
+  }
+}
+
+.animate-live-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: livePulse 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-live-pulse {
+    animation: none;
+    transform: scale(1);
+    opacity: 0.18;
+  }
+}
+
+/* =========================================================
+   TV / KEYBOARD FOCUS
+   ========================================================= */
+
+.tv-focus {
+  outline: none;
+  position: relative;
+
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+/* Clear Android TV D-pad / keyboard focus */
+.tv-focus:focus-visible {
+  outline: 3px solid rgb(74 222 128);
+  outline-offset: 3px;
+
+  background-color: rgb(74 222 128 / 0.1);
+  color: white;
+
+  box-shadow:
+    0 0 0 6px rgb(74 222 128 / 0.08),
+    0 0 24px rgb(74 222 128 / 0.18);
+
+  transform: scale(1.02);
+}
+
+/*
+ * Shared navigation target.
+ *
+ * Keep this neutral because MobileNav,
+ * Sidebar and TVNav all use tv-nav-item.
+ */
+.tv-nav-item {
+  min-height: 48px;
+  border-radius: 12px;
+}
+
+/* =========================================================
+   DESKTOP SIDEBAR
+   ========================================================= */
+
+/*
+ * Sidebar is controlled by its own Tailwind classes
+ * in Sidebar.tsx.
+ *
+ * Nothing here changes its position or width.
+ */
+
+/* =========================================================
+   ANDROID TV BOTTOM NAVIGATION
+   ========================================================= */
+
+.tv-nav {
+  display: block;
+}
+
+.tv-nav .tv-nav-inner {
+  width: 100%;
+  height: 96px;
+
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+
+  align-items: center;
+
+  gap: 12px;
+  padding: 10px 32px;
+}
+
+.tv-nav .tv-nav-item {
+  min-width: 0;
+  width: 100%;
+  height: 76px;
+  min-height: 76px;
+
+  border: 2px solid transparent;
+
+  color: rgba(255, 255, 255, 0.65);
+
+  transform: scale(1);
+
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.tv-nav .tv-nav-icon {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tv-nav .tv-nav-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.tv-nav .tv-nav-label {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* TV D-pad focus */
+.tv-nav .tv-focus:focus-visible {
+  outline: none;
+
+  color: #ffffff;
+
+  background: rgba(34, 197, 94, 0.18);
+
+  border-color: #22c55e;
+
+  transform: scale(1.05);
+
+  box-shadow:
+    0 0 0 3px rgba(34, 197, 94, 0.25),
+    0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================
+   TV CONTENT SPACING
+   ========================================================= */
+
+.tv-main {
+  padding-bottom: 0;
+}
+
+/*
+ * Reserve space for the fixed TV bottom bar.
+ */
+@media (min-width: 1280px) {
+  .tv-main {
+    padding-bottom: 96px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-focus {
+    transition: none;
+  }
+
+  .tv-focus:focus-visible,
+  .tv-nav .tv-focus:focus-visible {
+    transform: none;
+  }
+}
+/* =========================================================
+   APP DESKTOP LAYOUT
+   ========================================================= */
+
+.desktop-layout {
+  min-height: calc(100vh - 4rem);
+}
+
+/* Desktop: sidebar on the LEFT */
+@media (min-width: 1024px) {
+  .desktop-layout {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .desktop-main {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+/* Mobile */
+@media (max-width: 1023px) {
+  .desktop-main {
+    width: 100%;
+  }
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }

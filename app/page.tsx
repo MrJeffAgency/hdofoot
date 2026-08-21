@@ -1,69 +1,338 @@
-import Image from "next/image";
+import Link from "next/link";
+import Icon from "@/components/Icons";
+import { getFixtures } from "@/lib/football";
 
-export default function Home() {
+export default async function HomePage() {
+  const today = new Date().toISOString().split("T")[0];
+
+  const fixtures = await getFixtures(today);
+
+  const liveFixtures = fixtures.filter((fixture: any) =>
+    ["1H", "HT", "2H", "ET", "P", "LIVE"].includes(
+      fixture.fixture.status.short
+    )
+  );
+
+  const upcomingFixtures = fixtures
+    .filter((fixture: any) =>
+      ["NS", "TBD"].includes(fixture.fixture.status.short)
+    )
+    .slice(0, 6);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen w-full bg-[#07090d] text-white">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-5 md:px-6 lg:px-8">
+
+        {/* HERO */}
+        <section className="relative min-h-[430px] w-full overflow-hidden rounded-3xl border border-white/10">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: "url('/football-hero.jpg')",
+            }}
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-r from-[#05070a] via-[#05070a]/80 to-[#05070a]/30" />
+
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#07090d] to-transparent" />
+
+          <div className="relative z-10 flex min-h-[430px] items-center p-6 sm:p-8 md:p-10 lg:p-14">
+            <div className="w-full max-w-2xl">
+
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-400/30 bg-green-500/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-green-400 backdrop-blur">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                Live Football
+              </div>
+
+              <h1 className="text-4xl font-black leading-none tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+                Football.
+                <br />
+                <span className="text-green-400">
+                  Live & Connected.
+                </span>
+              </h1>
+
+              <p className="mt-6 max-w-xl text-sm leading-6 text-gray-300 md:text-base">
+                Follow live scores, fixtures, results, leagues and your
+                favorite teams in one place.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/live"
+                  className="tv-focus tv-nav-item rounded-xl bg-green-500 px-6 py-3 text-sm font-bold text-black shadow-lg shadow-green-500/20 transition hover:bg-green-400"
+                >
+                  Watch Live Matches
+                </Link>
+
+                <Link
+                  href="/fixtures"
+                  className="tv-focus tv-nav-item rounded-xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
+                >
+                  View Fixtures
+                </Link>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* TODAY */}
+        <section className="mt-10 w-full">
+
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-green-400">
+                Football Center
+              </p>
+
+              <h2 className="mt-1 text-2xl font-black">
+                Today&apos;s Football
+              </h2>
+            </div>
+
+            <Link
+              href="/fixtures"
+              className="tv-focus shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-green-400 hover:text-green-300"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+              See all →
+            </Link>
+          </div>
+
+          {/* INFO CARDS */}
+          <div className="grid w-full gap-4 md:grid-cols-3">
+            <InfoCard
+              icon="liveDot"
+              title="Live Matches"
+              value={String(liveFixtures.length)}
+              description={
+                liveFixtures.length > 0
+                  ? "Matches happening right now"
+                  : "No live matches right now"
+              }
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+            <InfoCard
+              icon="calendar"
+              title="Today's Matches"
+              value={String(fixtures.length)}
+              description="Real fixtures from today"
+            />
+
+            <InfoCard
+              icon="trophy"
+              title="Top Leagues"
+              value={String(
+                new Set(fixtures.map((f: any) => f.league.id)).size
+              )}
+              description="Competitions playing today"
+            />
+          </div>
+        </section>
+
+        {/* LIVE MATCHES */}
+        {liveFixtures.length > 0 && (
+          <section className="mt-10 w-full">
+
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <h2 className="text-2xl font-black">
+                Live Now
+              </h2>
+
+              <Link
+                href="/live"
+                className="tv-focus shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-green-400"
+              >
+                See all →
+              </Link>
+            </div>
+
+            <div className="grid w-full gap-4 md:grid-cols-2">
+              {liveFixtures.slice(0, 6).map((fixture: any) => (
+                <MatchCard
+                  key={fixture.fixture.id}
+                  fixture={fixture}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* UPCOMING */}
+        <section className="mt-10 w-full">
+
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-black">
+              Upcoming Matches
+            </h2>
+
+            <Link
+              href="/fixtures"
+              className="tv-focus shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-green-400"
+            >
+              See all →
+            </Link>
+          </div>
+
+          <div className="grid w-full gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {upcomingFixtures.map((fixture: any) => (
+              <MatchCard
+                key={fixture.fixture.id}
+                fixture={fixture}
+              />
+            ))}
+          </div>
+        </section>
+
+      </div>
+    </main>
+  );
+}
+
+function InfoCard({
+  icon,
+  title,
+  value,
+  description,
+}: {
+  icon: "liveDot" | "calendar" | "trophy";
+  title: string;
+  value: string;
+  description: string;
+}) {
+  return (
+    <div className="group w-full rounded-2xl border border-white/10 bg-[#0d1118] p-5 transition hover:border-green-500/30 hover:bg-[#10161f]">
+
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/5 text-green-400">
+          <Icon name={icon} size={21} />
         </div>
-      </main>
+
+        <p className="text-sm font-semibold text-gray-300">
+          {title}
+        </p>
+      </div>
+
+      <p className="mt-5 text-3xl font-black">
+        {value}
+      </p>
+
+      <p className="mt-1 text-xs text-gray-500">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function MatchCard({
+  fixture,
+}: {
+  fixture: any;
+}) {
+  const status = fixture.fixture.status;
+
+  const isLive = ["1H", "HT", "2H", "ET", "P", "LIVE"].includes(
+    status.short
+  );
+
+  const time = new Date(fixture.fixture.date).toLocaleTimeString(
+    "en-GB",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
+
+  return (
+    <Link
+      href={`/match/${fixture.fixture.id}`}
+      className="tv-focus tv-nav-item block w-full rounded-2xl border border-white/10 bg-[#0d1118] p-5 transition hover:border-green-500/30 hover:bg-[#10161f]"
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+
+        <div className="flex min-w-0 items-center gap-2">
+          <img
+            src={fixture.league.logo}
+            alt=""
+            className="h-5 w-5 shrink-0 object-contain"
+          />
+
+          <span className="truncate text-xs text-gray-500">
+            {fixture.league.name}
+          </span>
+        </div>
+
+        {isLive ? (
+          <span className="flex shrink-0 items-center gap-1.5 text-xs font-bold text-green-400">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+            LIVE {status.elapsed ? `${status.elapsed}'` : ""}
+          </span>
+        ) : (
+          <span className="shrink-0 text-xs text-gray-500">
+            {time}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-4">
+        <Team
+          name={fixture.teams.home.name}
+          logo={fixture.teams.home.logo}
+          score={fixture.goals.home}
+          align="left"
+        />
+
+        <span className="text-xs font-bold text-gray-600">
+          VS
+        </span>
+
+        <Team
+          name={fixture.teams.away.name}
+          logo={fixture.teams.away.logo}
+          score={fixture.goals.away}
+          align="right"
+        />
+      </div>
+    </Link>
+  );
+}
+
+function Team({
+  name,
+  logo,
+  score,
+  align,
+}: {
+  name: string;
+  logo: string;
+  score: number | null;
+  align: "left" | "right";
+}) {
+  return (
+    <div
+      className={`flex min-w-0 items-center gap-2 sm:gap-3 ${
+        align === "right"
+          ? "flex-row-reverse text-right"
+          : ""
+      }`}
+    >
+      <img
+        src={logo}
+        alt={name}
+        className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
+      />
+
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-gray-200">
+          {name}
+        </p>
+
+        {score !== null && (
+          <p className="mt-1 text-xl font-black sm:text-2xl">
+            {score}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
