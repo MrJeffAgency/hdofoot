@@ -16,15 +16,18 @@ interface Stream {
 async function getStream(
   fixtureId: string
 ): Promise<Stream> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+  /*
+   * Vercel provides VERCEL_PROJECT_PRODUCTION_URL
+   * automatically for deployed projects.
+   *
+   * For local development, fall back to localhost.
+   */
+  const productionUrl =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL;
 
-  if (!baseUrl) {
-    console.error(
-      "NEXT_PUBLIC_APP_URL is not configured."
-    );
-
-    return { type: "none" };
-  }
+  const baseUrl = productionUrl
+    ? `https://${productionUrl}`
+    : "http://localhost:3000";
 
   try {
     const response = await fetch(
