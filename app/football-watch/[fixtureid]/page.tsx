@@ -16,26 +16,41 @@ interface Stream {
 async function getStream(
   fixtureId: string
 ): Promise<Stream> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-  const response = await fetch(
-    `${baseUrl}/api/emby/play/${encodeURIComponent(
-      fixtureId
-    )}`,
-    {
-      cache: "no-store",
-    }
-  );
+  if (!baseUrl) {
+    console.error(
+      "NEXT_PUBLIC_APP_URL is not configured."
+    );
 
-  if (!response.ok) {
     return { type: "none" };
   }
 
-  const data = await response.json();
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/emby/play/${encodeURIComponent(
+        fixtureId
+      )}`,
+      {
+        cache: "no-store",
+      }
+    );
 
-  return data.stream ?? { type: "none" };
+    if (!response.ok) {
+      return { type: "none" };
+    }
+
+    const data = await response.json();
+
+    return data.stream ?? { type: "none" };
+  } catch (error) {
+    console.error(
+      "Failed to get fixture stream:",
+      error
+    );
+
+    return { type: "none" };
+  }
 }
 
 export default async function WatchPage({

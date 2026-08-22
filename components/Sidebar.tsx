@@ -5,12 +5,7 @@ const navItems = [
     href: "/",
     label: "Home",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M3 10.5 12 3l9 7.5" />
         <path d="M5 9.5V21h14V9.5" />
       </svg>
@@ -20,12 +15,7 @@ const navItems = [
     href: "/live",
     label: "Live",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="12" r="3" />
         <path d="M5.64 5.64a9 9 0 0 0 0 12.72" />
         <path d="M18.36 5.64a9 9 0 0 1 0 12.72" />
@@ -33,26 +23,22 @@ const navItems = [
     ),
   },
   {
-    href: "/fixtures",
-    label: "Matches",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <rect
-          x="3"
-          y="5"
-          width="18"
-          height="16"
-          rx="2"
-        />
-        <path d="M16 3v4M8 3v4M3 10h18" />
-      </svg>
-    ),
-  },
+  href: "/youtube",
+  label: "YTB",
+  icon: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <path d="m10 9 5 3-5 3V9Z" />
+    </svg>
+  ),
+},
   {
     href: "/iptv",
     label: "IPTV",
@@ -65,13 +51,7 @@ const navItems = [
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <rect
-          x="3"
-          y="5"
-          width="18"
-          height="14"
-          rx="2"
-        />
+        <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="M8 21h8" />
         <path d="M12 19v2" />
         <path d="m9 10 4 2-4 2v-4Z" />
@@ -84,19 +64,8 @@ const navItems = [
     href: "/movie",
     label: "Movies",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <rect
-          x="3"
-          y="4"
-          width="18"
-          height="16"
-          rx="2"
-        />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
         <path d="m3 8 18-4M3 16l18-4M8 4l4 16M16 4l4 16" />
       </svg>
     ),
@@ -105,19 +74,8 @@ const navItems = [
     href: "/tv",
     label: "TV Shows",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <rect
-          x="3"
-          y="5"
-          width="18"
-          height="14"
-          rx="2"
-        />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="m8 3 4 2 4-2" />
         <path d="M8 12h.01M12 12h.01M16 12h.01M8 16h8" />
       </svg>
@@ -127,19 +85,8 @@ const navItems = [
     href: "/videos",
     label: "Videos",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <rect
-          x="3"
-          y="5"
-          width="18"
-          height="14"
-          rx="2"
-        />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="m10 9 5 3-5 3V9Z" />
       </svg>
     ),
@@ -150,8 +97,8 @@ export default function Sidebar() {
   return (
     <aside
       className="
-        hidden
-        lg:flex
+        flex
+        h-full
         w-64
         shrink-0
         flex-col

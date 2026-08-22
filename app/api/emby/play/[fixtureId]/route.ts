@@ -59,16 +59,15 @@ export async function GET(
     /*
      * Normal fixture -> stream resolution.
      */
-    const origin =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "http://localhost:3000";
+    const requestUrl = new URL(_request.url);
 
-    const streamsResponse = await fetch(
-      `${origin}/api/emby/match-fixtures`,
-      {
-        cache: "no-store",
-      }
-    );
+const streamsResponse = await fetch(
+  `${requestUrl.origin}/api/emby/match-fixtures`,
+  {
+    cache: "no-store",
+  }
+);
+    
 
     if (!streamsResponse.ok) {
       return NextResponse.json(

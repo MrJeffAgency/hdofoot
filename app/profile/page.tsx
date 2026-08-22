@@ -2,46 +2,36 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 
 export default function ProfilePage() {
-  const [showPayPalQR, setShowPayPalQR] =
-    useState(false);
-
-  const telegramUsername =
-    process.env.NEXT_PUBLIC_TELEGRAM_USERNAME ||
-    process.env.TELEGRAM_USERNAME ||
-    "";
-
-  const paypalUsername =
-    process.env.NEXT_PUBLIC_PAYPAL_USERNAME ||
-    process.env.PAYPAL_USERNAME ||
-    "";
+  const [copied, setCopied] = useState(false);
 
   const btcAddress =
     process.env.NEXT_PUBLIC_BTC_ADDRESS ||
     process.env.BTC_ADDRESS ||
     "";
 
-  const cleanTelegram =
-    telegramUsername.replace(/^@/, "");
+  const telegramBotUrl =
+    "https://t.me/hdofoothelp_bot";
 
-  const cleanPayPal =
-    paypalUsername.replace(/^@/, "");
+  async function copyBitcoinAddress() {
+    if (!btcAddress) return;
 
-  /*
-   * PayPal profile URL
-   */
-  const paypalUrl = cleanPayPal
-    ? `https://paypal.me/${cleanPayPal}`
-    : "";
+    try {
+      await navigator.clipboard.writeText(btcAddress);
 
-  /*
-   * Telegram URL
-   */
-  const telegramUrl = cleanTelegram
-    ? `https://t.me/${cleanTelegram}`
-    : "";
+      setCopied(true);
+
+      window.setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.error(
+        "Failed to copy Bitcoin address:",
+        error
+      );
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#07090d] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -76,8 +66,6 @@ export default function ProfilePage() {
           "
         >
           <div className="flex flex-col items-center text-center">
-
-            {/* LOGO */}
 
             <div
               className="
@@ -133,83 +121,67 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {telegramUrl ? (
-            <a
-              href={telegramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-                tv-focus
-                flex
-                min-h-[56px]
-                w-full
-                items-center
-                gap-4
-                rounded-xl
-                border
-                border-white/10
-                bg-[#07090d]
-                px-5
-                transition
-                hover:border-green-500/40
-                hover:bg-[#121821]
-                focus:outline-none
-              "
-            >
-              {/* Telegram icon */}
+          <a
+            href={telegramBotUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="
+              tv-focus
+              flex
+              min-h-[56px]
+              w-full
+              items-center
+              gap-4
+              rounded-xl
+              border
+              border-white/10
+              bg-[#07090d]
+              px-5
+              transition
+              hover:border-blue-500/40
+              hover:bg-[#121821]
+              focus:outline-none
+            "
+          >
+            {/* Telegram icon */}
 
-              <div
-                className="
-                  flex
-                  h-10
-                  w-10
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-blue-500/15
-                  text-blue-400
-                "
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-5 w-5"
-                  aria-hidden="true"
-                >
-                  <path d="M21.9 3.6 18.7 20c-.2 1.2-.9 1.5-1.8.9l-5-3.7-2.4 2.3c-.3.3-.5.5-1 .5l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.2L6.1 13.7 1.2 12c-1.1-.3-1.1-1 .2-1.5L20.5 3c.9-.3 1.7.2 1.4.6Z" />
-                </svg>
-              </div>
-
-              <div className="min-w-0 flex-1 text-left">
-                <p className="font-semibold text-white">
-                  Contact us on Telegram
-                </p>
-
-                <p className="mt-1 truncate text-sm text-gray-500">
-                  @{cleanTelegram}
-                </p>
-              </div>
-
-              <span className="text-gray-500">
-                →
-              </span>
-            </a>
-          ) : (
             <div
               className="
-                rounded-xl
-                border
-                border-white/10
-                bg-[#07090d]
-                p-4
-                text-sm
-                text-gray-500
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                bg-blue-500/15
+                text-blue-400
               "
             >
-              Telegram contact is not configured.
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <path d="M21.9 3.6 18.7 20c-.2 1.2-.9 1.5-1.8.9l-5-3.7-2.4 2.3c-.3.3-.5.5-1 .5l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.2L6.1 13.7 1.2 12c-1.1-.3-1.1-1 .2-1.5L20.5 3c.9-.3 1.7.2 1.4.6Z" />
+              </svg>
             </div>
-          )}
+
+            <div className="min-w-0 flex-1 text-left">
+              <p className="font-semibold text-white">
+                HDOFOOT Help Bot
+              </p>
+
+              <p className="mt-1 truncate text-sm text-gray-500">
+                @hdofoothelp_bot
+              </p>
+            </div>
+
+            <span className="text-gray-500">
+              →
+            </span>
+          </a>
         </section>
 
         {/* =================================================
@@ -235,79 +207,17 @@ export default function ProfilePage() {
             <p className="mt-2 text-sm leading-6 text-gray-400">
               If you enjoy HDOFOOT and would like to
               support the project, you can donate
-              using PayPal or Bitcoin.
+              using Bitcoin.
             </p>
           </div>
-
-          {/* =================================================
-              PAYPAL
-              ================================================= */}
-
-          {paypalUrl && (
-            <button
-              type="button"
-              onClick={() => setShowPayPalQR(true)}
-              className="
-                tv-focus
-                flex
-                min-h-[60px]
-                w-full
-                items-center
-                gap-4
-                rounded-xl
-                border
-                border-white/10
-                bg-[#07090d]
-                px-5
-                text-left
-                transition
-                hover:border-blue-500/40
-                hover:bg-[#121821]
-                focus:outline-none
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-11
-                  w-11
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-blue-500/15
-                  text-lg
-                  font-black
-                  text-blue-400
-                "
-              >
-                P
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-white">
-                  PayPal
-                </p>
-
-                <p className="mt-1 text-sm text-gray-500">
-                  @{cleanPayPal}
-                </p>
-              </div>
-
-              <span className="text-gray-500">
-                →
-              </span>
-            </button>
-          )}
 
           {/* =================================================
               BITCOIN
               ================================================= */}
 
-          {btcAddress && (
+          {btcAddress ? (
             <div
               className="
-                mt-3
                 rounded-xl
                 border
                 border-white/10
@@ -347,6 +257,8 @@ export default function ProfilePage() {
 
               </div>
 
+              {/* BTC ADDRESS */}
+
               <div
                 className="
                   mt-4
@@ -368,10 +280,36 @@ export default function ProfilePage() {
                   {btcAddress}
                 </p>
               </div>
-            </div>
-          )}
 
-          {!paypalUrl && !btcAddress && (
+              {/* COPY BUTTON */}
+
+              <button
+                type="button"
+                onClick={copyBitcoinAddress}
+                className="
+                  tv-focus
+                  mt-3
+                  flex
+                  min-h-[52px]
+                  w-full
+                  items-center
+                  justify-center
+                  rounded-xl
+                  bg-orange-500
+                  px-5
+                  font-bold
+                  text-black
+                  transition
+                  hover:bg-orange-400
+                  focus:outline-none
+                "
+              >
+                {copied
+                  ? "✓ BTC Address Copied"
+                  : "Copy BTC Address"}
+              </button>
+            </div>
+          ) : (
             <div
               className="
                 rounded-xl
@@ -383,7 +321,7 @@ export default function ProfilePage() {
                 text-gray-500
               "
             >
-              Donation options are not configured.
+              Bitcoin donation address is not configured.
             </div>
           )}
         </section>
@@ -426,133 +364,6 @@ export default function ProfilePage() {
         </section>
 
       </div>
-
-      {/* =================================================
-          PAYPAL QR MODAL
-          ================================================= */}
-
-      {showPayPalQR && paypalUrl && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[110]
-            flex
-            items-center
-            justify-center
-            bg-black/85
-            px-4
-            backdrop-blur-sm
-          "
-          onClick={() => setShowPayPalQR(false)}
-        >
-          <div
-            className="
-              w-full
-              max-w-sm
-              rounded-2xl
-              border
-              border-white/10
-              bg-[#0d1118]
-              p-6
-              text-center
-              shadow-2xl
-            "
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-
-            <h2 className="text-xl font-bold">
-              PayPal Donation
-            </h2>
-
-            <p className="mt-2 text-sm text-gray-500">
-              Scan this QR code to open PayPal.
-            </p>
-
-            {/* QR CODE */}
-
-            <div
-              className="
-                mx-auto
-                mt-6
-                flex
-                w-fit
-                rounded-2xl
-                bg-white
-                p-4
-              "
-            >
-              <QRCodeSVG
-                value={paypalUrl}
-                size={220}
-                level="M"
-              />
-            </div>
-
-            <p className="mt-5 text-sm text-gray-400">
-              PayPal: @{cleanPayPal}
-            </p>
-
-            {/* OPEN PAYPAL */}
-
-            <a
-              href={paypalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-                tv-focus
-                mt-5
-                flex
-                min-h-[50px]
-                w-full
-                items-center
-                justify-center
-                rounded-xl
-                bg-blue-500
-                px-5
-                font-bold
-                text-white
-                transition
-                hover:bg-blue-400
-                focus:outline-none
-              "
-            >
-              Open PayPal
-            </a>
-
-            {/* CLOSE */}
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowPayPalQR(false)
-              }
-              className="
-                tv-focus
-                mt-3
-                min-h-[50px]
-                w-full
-                rounded-xl
-                border
-                border-white/10
-                bg-[#07090d]
-                px-5
-                font-semibold
-                text-white
-                transition
-                hover:bg-[#121821]
-                focus:outline-none
-              "
-            >
-              Close
-            </button>
-
-          </div>
-        </div>
-      )}
-
     </main>
   );
 }

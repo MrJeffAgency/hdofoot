@@ -7,7 +7,8 @@ import MobileNav from "@/components/MobileNav";
 
 export const metadata: Metadata = {
   title: "HDOFOOT",
-  description: "Live football scores, fixtures, leagues and matches.",
+  description:
+    "Live football scores, fixtures, leagues and matches.",
 };
 
 export default function RootLayout({
@@ -22,13 +23,20 @@ export default function RootLayout({
         <Header />
 
         <div className="desktop-layout">
-          <Sidebar />
 
+          {/* DESKTOP SIDEBAR */}
+          <div className="hidden lg:flex shrink-0">
+            <Sidebar />
+          </div>
+
+          {/* PAGE CONTENT */}
           <main className="desktop-main tv-main w-full min-w-0">
             {children}
           </main>
+
         </div>
 
+        {/* PHONE + TABLET NAVIGATION */}
         <MobileNav />
 
       </body>

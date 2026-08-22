@@ -1,0 +1,37 @@
+[
+  {
+    "id": "3abn-kids",
+    "name": "3ABN Kids Network",
+    "logo": "https://i.imgur.com/z3npqO1.png",
+    "group": "Kids",
+    "stream": "https://3abn.bozztv.com/3abn2/Kids_live/smil:Kids_live.smil/playlist.m3u8"
+  },
+  {
+    "id": "4fun-kids",
+    "name": "4 Fun Kids",
+    "logo": "https://i.imgur.com/2JO5Y8c.png",
+    "group": "Kids",
+    "stream": "https://stream.4fun.tv:8889/hls/4fk_high/index.m3u8"
+  },
+  {
+    "id": "9go-sydney",
+    "name": "9Go!",
+    "logo": "https://i.imgur.com/RLijQI8.png",
+    "group": "Entertainment",
+    "stream": "https://9now-livestreams.akamaized.net/hls/live/2008312/go-syd/master.m3u8"
+  },
+  {
+    "id": "13-kids",
+    "name": "13 Kids",
+    "logo": "https://i.imgur.com/8WJUbSD.png",
+    "group": "Kids",
+    "stream": "https://origin.dpsgo.com/ssai/event/LhHrVtyeQkKZ-Ye_xEU75g/master.m3u8"
+  },
+  {
+    "id": "90s-kids",
+    "name": "90's Kids",
+    "logo": "https://images.pluto.tv/channels/6452c814939a590008567a3b/colorLogoPNG_1731836283044.png",
+    "group": "Kids",
+    "stream": "https://jmp2.uk/plu-6452c814939a590008567a3b.m3u8"
+  }
+]

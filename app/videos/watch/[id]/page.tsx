@@ -20,9 +20,28 @@ export default async function VideoWatchPage({
 }: PageProps) {
   const { id } = await params;
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!baseUrl) {
+    console.error(
+      "NEXT_PUBLIC_APP_URL is not configured."
+    );
+
+    return (
+      <main className="min-h-screen bg-[#07090d] p-6 text-white">
+        <h1 className="text-2xl font-bold">
+          Video service is not configured
+        </h1>
+
+        <Link
+          href="/videos"
+          className="tv-focus mt-5 inline-flex rounded-xl bg-green-500 px-5 py-3 font-bold text-black"
+        >
+          ← Back to Videos
+        </Link>
+      </main>
+    );
+  }
 
   const response = await fetch(
     `${baseUrl}/api/emby/videos`,
@@ -99,7 +118,7 @@ export default async function VideoWatchPage({
     <main className="min-h-screen bg-[#07090d] text-white">
       <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-5 md:px-6 lg:px-8">
 
-        {/* Header */}
+        {/* HEADER */}
 
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -140,7 +159,7 @@ export default async function VideoWatchPage({
           </Link>
         </div>
 
-        {/* Player */}
+        {/* PLAYER */}
 
         <div
           className="
@@ -162,7 +181,7 @@ export default async function VideoWatchPage({
           />
         </div>
 
-        {/* Description */}
+        {/* DESCRIPTION */}
 
         {video.overview && (
           <section className="mt-6 rounded-2xl border border-white/10 bg-[#0d1118] p-5">

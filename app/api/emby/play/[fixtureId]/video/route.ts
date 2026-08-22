@@ -21,16 +21,14 @@ export async function GET(
 
   try {
     // Get the normalized stream map internally.
-    const origin =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "http://localhost:3000";
+    const origin = new URL(request.url).origin;
 
-    const response = await fetch(
-      `${origin}/api/emby/match-fixtures`,
-      {
-        cache: "no-store",
-      }
-    );
+const response = await fetch(
+  `${origin}/api/emby/match-fixtures`,
+  {
+    cache: "no-store",
+  }
+);
 
     if (!response.ok) {
       return new Response("Unable to resolve stream.", {
