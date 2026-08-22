@@ -30,7 +30,6 @@ HDOFOOT is a responsive football streaming and match-information web app built w
 - Tailwind CSS
 - API-Football
 - HLS playback
-- Supabase authentication
 - Emby integration
 
 ## Development
