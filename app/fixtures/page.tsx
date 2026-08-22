@@ -1,5 +1,9 @@
 import Link from "next/link";
+import Icon from "@/components/Icons";
 import { getFixtures } from "@/lib/football";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function FixturesPage() {
   const today = new Date().toISOString().split("T")[0];
@@ -7,48 +11,54 @@ export default async function FixturesPage() {
   const fixtures = await getFixtures(today);
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-8 lg:px-8">
+    <main className="min-h-screen w-full bg-[#07090d] text-white">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-8 pb-28 sm:px-5 md:px-6 lg:px-8 lg:pb-10">
 
-      {/* HEADER */}
-      <div className="mb-8">
-        <p className="text-xs font-bold uppercase tracking-widest text-green-400">
-          HDOFOOT
-        </p>
-
-        <h1 className="mt-2 text-3xl font-black md:text-4xl">
-          Fixtures
-        </h1>
-
-        <p className="mt-2 text-sm text-gray-500">
-          Today&apos;s upcoming and recent football matches.
-        </p>
-      </div>
-
-      {/* FIXTURES */}
-      {fixtures.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-[#0d1118] p-8 text-center">
-          <p className="text-lg font-bold text-white">
-            No fixtures available
+        {/* HEADER */}
+        <div className="mb-8">
+          <p className="text-xs font-bold uppercase tracking-widest text-green-400">
+            HDOFOOT
           </p>
+
+          <h1 className="mt-2 text-3xl font-black md:text-4xl">
+            Fixtures
+          </h1>
 
           <p className="mt-2 text-sm text-gray-500">
-            There are no football matches scheduled for today.
+            Today&apos;s upcoming and recent football matches.
           </p>
         </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
-          {fixtures.map((fixture: any) => (
-            <FixtureCard
-              key={fixture.fixture.id}
-              fixture={fixture}
-            />
-          ))}
+        {/* FIXTURES */}
+        {fixtures.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-[#0d1118] p-8 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-green-400">
+              <Icon name="football" size={22} />
+            </div>
 
-        </div>
-      )}
+            <p className="mt-4 text-lg font-bold text-white">
+              No fixtures available
+            </p>
 
-    </div>
+            <p className="mt-2 text-sm text-gray-500">
+              There are no football matches scheduled for today.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+            {fixtures.map((fixture: any) => (
+              <FixtureCard
+                key={fixture.fixture.id}
+                fixture={fixture}
+              />
+            ))}
+
+          </div>
+        )}
+
+      </div>
+    </main>
   );
 }
 
@@ -75,6 +85,12 @@ function FixtureCard({
     minute: "2-digit",
   });
 
+  const leagueName =
+    fixture.league?.name || "Football";
+
+  const leagueLogo =
+    fixture.league?.logo || "";
+
   return (
     <Link
       href={`/match/${fixture.fixture.id}`}
@@ -99,16 +115,20 @@ function FixtureCard({
 
         <div className="flex min-w-0 items-center gap-2">
 
-          {fixture.league.logo && (
+          {leagueLogo ? (
             <img
-              src={fixture.league.logo}
+              src={leagueLogo}
               alt=""
               className="h-6 w-6 shrink-0 object-contain"
             />
+          ) : (
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/5 text-green-400">
+              <Icon name="football" size={12} />
+            </div>
           )}
 
           <span className="truncate text-xs text-gray-500">
-            {fixture.league.name}
+            {leagueName}
           </span>
 
         </div>
@@ -131,17 +151,33 @@ function FixtureCard({
       <div className="space-y-4">
 
         <Team
-          name={fixture.teams.home.name}
-          logo={fixture.teams.home.logo}
-          score={fixture.goals.home}
+          name={
+            fixture.teams?.home?.name ||
+            "Home"
+          }
+          logo={
+            fixture.teams?.home?.logo ||
+            ""
+          }
+          score={
+            fixture.goals?.home ?? null
+          }
         />
 
         <div className="border-t border-white/5" />
 
         <Team
-          name={fixture.teams.away.name}
-          logo={fixture.teams.away.logo}
-          score={fixture.goals.away}
+          name={
+            fixture.teams?.away?.name ||
+            "Away"
+          }
+          logo={
+            fixture.teams?.away?.logo ||
+            ""
+          }
+          score={
+            fixture.goals?.away ?? null
+          }
         />
 
       </div>
@@ -174,11 +210,21 @@ function Team({
   return (
     <div className="flex items-center gap-3">
 
-      <img
-        src={logo}
-        alt={name}
-        className="h-10 w-10 shrink-0 object-contain"
-      />
+      {/* TEAM LOGO */}
+
+      {logo ? (
+        <img
+          src={logo}
+          alt={name}
+          className="h-10 w-10 shrink-0 object-contain"
+        />
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-green-400">
+          <Icon name="football" size={18} />
+        </div>
+      )}
+
+      {/* TEAM INFO */}
 
       <div className="min-w-0 flex-1">
 
