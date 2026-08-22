@@ -1,30 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 
 const API_URL = "https://v3.football.api-sports.io";
 
 export async function GET(request: NextRequest) {
-  /*
-   * Verify the Supabase session before allowing
-   * access to the Football API.
-   */
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      {
-        error: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
-  }
-
   try {
     const apiKey = process.env.API_FOOTBALL_KEY;
 
@@ -37,7 +15,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const searchParams = request.nextUrl.searchParams;
+    const searchParams =
+      request.nextUrl.searchParams;
 
     const endpoint =
       searchParams.get("endpoint") || "fixtures";
@@ -72,14 +51,13 @@ export async function GET(request: NextRequest) {
 
     const response = await fetch(url, {
       method: "GET",
+
       headers: {
         "x-apisports-key": apiKey,
       },
 
       /*
        * Cache the API-Football response for 30 seconds.
-       * This prevents unnecessary requests when the same
-       * endpoint/date is requested repeatedly.
        */
       next: {
         revalidate: 30,
@@ -155,7 +133,6 @@ export async function GET(request: NextRequest) {
       headers: {
         /*
          * Tell the browser it can reuse this response briefly.
-         * Next.js still controls the server-side cache above.
          */
         "Cache-Control":
           "public, s-maxage=30, stale-while-revalidate=60",

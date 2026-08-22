@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFixtures } from "@/lib/football";
 import { matchFixtureToEmby } from "@/lib/emby-match";
-import { createClient } from "@/lib/supabase/server";
 
 const LIVE_STATUSES = new Set([
   "1H",
@@ -71,27 +70,6 @@ async function getEmbyItems(): Promise<EmbyItem[]> {
 }
 
 export async function GET() {
-  /*
-   * Verify the Supabase session before allowing
-   * access to live match / Emby mapping data.
-   */
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      {
-        error: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
-  }
-
   try {
     const [fixtures, embyItems] =
       await Promise.all([

@@ -1,332 +1,558 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function ProfilePage() {
-  const router = useRouter();
+  const [showPayPalQR, setShowPayPalQR] =
+    useState(false);
 
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
+  const telegramUsername =
+    process.env.NEXT_PUBLIC_TELEGRAM_USERNAME ||
+    process.env.TELEGRAM_USERNAME ||
+    "";
 
-  useEffect(() => {
-    const supabase = createClient();
+  const paypalUsername =
+    process.env.NEXT_PUBLIC_PAYPAL_USERNAME ||
+    process.env.PAYPAL_USERNAME ||
+    "";
 
-    async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const btcAddress =
+    process.env.NEXT_PUBLIC_BTC_ADDRESS ||
+    process.env.BTC_ADDRESS ||
+    "";
 
-      setUser(user);
-      setLoading(false);
-    }
+  const cleanTelegram =
+    telegramUsername.replace(/^@/, "");
 
-    loadUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function handleLogout() {
-    setLoggingOut(true);
-
-    const supabase = createClient();
-
-    await supabase.auth.signOut();
-
-    router.replace("/login");
-    router.refresh();
-  }
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-[#07090d] px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
-          <div className="rounded-2xl border border-white/10 bg-[#0d1118] p-8">
-            <p className="text-sm text-gray-400">
-              Loading account...
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const cleanPayPal =
+    paypalUsername.replace(/^@/, "");
 
   /*
-   * LOGGED OUT
+   * PayPal profile URL
    */
-
-  if (!user) {
-    return (
-      <main className="min-h-screen bg-[#07090d] px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
-
-          <div className="rounded-2xl border border-white/10 bg-[#0d1118] p-6 sm:p-8">
-
-            <div className="flex flex-col items-center text-center">
-
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-500/15 text-green-400">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-10 w-10"
-                >
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
-                </svg>
-              </div>
-
-              <h1 className="mt-5 text-2xl font-bold sm:text-3xl">
-                Welcome to HDOFOOT
-              </h1>
-
-              <p className="mt-2 max-w-md text-sm leading-6 text-gray-400">
-                Sign in to access your account and continue using HDOFOOT.
-              </p>
-
-              <div className="mt-7 flex w-full max-w-sm flex-col gap-3 sm:flex-row">
-
-                <Link
-                  href="/login"
-                  className="
-                    tv-focus
-                    flex
-                    min-h-[52px]
-                    flex-1
-                    items-center
-                    justify-center
-                    rounded-xl
-                    bg-green-500
-                    px-6
-                    font-bold
-                    text-black
-                    transition
-                    hover:bg-green-400
-                    focus:outline-none
-                  "
-                >
-                  Sign In
-                </Link>
-
-                <Link
-                  href="/register"
-                  className="
-                    tv-focus
-                    flex
-                    min-h-[52px]
-                    flex-1
-                    items-center
-                    justify-center
-                    rounded-xl
-                    border
-                    border-white/10
-                    bg-[#121821]
-                    px-6
-                    font-semibold
-                    text-white
-                    transition
-                    hover:border-green-500/40
-                    hover:bg-[#18201c]
-                    focus:outline-none
-                  "
-                >
-                  Create Account
-                </Link>
-
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const paypalUrl = cleanPayPal
+    ? `https://paypal.me/${cleanPayPal}`
+    : "";
 
   /*
-   * LOGGED IN
+   * Telegram URL
    */
-
-  const email =
-    user.email || "No email available";
-
-  const initial =
-    email.charAt(0).toUpperCase();
+  const telegramUrl = cleanTelegram
+    ? `https://t.me/${cleanTelegram}`
+    : "";
 
   return (
     <main className="min-h-screen bg-[#07090d] px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
 
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+            ================================================= */}
 
         <div className="mb-7">
           <h1 className="text-2xl font-bold sm:text-3xl">
-            My Account
+            Profile
           </h1>
 
           <p className="mt-2 text-sm text-gray-400">
-            Manage your HDOFOOT account.
+            HDOFOOT information, help and support.
           </p>
         </div>
 
-        {/* PROFILE CARD */}
+        {/* =================================================
+            HDOFOOT PROFILE CARD
+            ================================================= */}
 
-        <section className="rounded-2xl border border-white/10 bg-[#0d1118] p-6 sm:p-8">
+        <section
+          className="
+            rounded-2xl
+            border
+            border-white/10
+            bg-[#0d1118]
+            p-6
+            sm:p-8
+          "
+        >
+          <div className="flex flex-col items-center text-center">
 
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            {/* LOGO */}
 
-            {/* AVATAR */}
-
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-green-500 text-3xl font-black text-black">
-              {initial}
-            </div>
-
-            {/* USER INFORMATION */}
-
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Signed in as
-              </p>
-
-              <h2 className="mt-1 break-all text-xl font-bold text-white">
-                {email}
-              </h2>
-
-              <div className="mt-3 flex items-center gap-2 text-sm text-green-400">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                Account active
-              </div>
-            </div>
-
-          </div>
-
-          {/* ACCOUNT DETAILS */}
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-
-            <div className="rounded-xl border border-white/10 bg-[#07090d] p-4">
-              <p className="text-xs text-gray-500">
-                Email
-              </p>
-
-              <p className="mt-2 break-all text-sm font-medium text-white">
-                {email}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-[#07090d] p-4">
-              <p className="text-xs text-gray-500">
-                Account status
-              </p>
-
-              <p className="mt-2 text-sm font-medium text-green-400">
-                Active
-              </p>
-            </div>
-
-          </div>
-
-          {/* ACTIONS */}
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-
-            <Link
-              href="/"
+            <div
               className="
-                tv-focus
                 flex
-                min-h-[52px]
-                flex-1
+                h-20
+                w-20
                 items-center
                 justify-center
-                rounded-xl
+                rounded-full
                 bg-green-500
-                px-6
-                font-bold
-                text-black
-                transition
-                hover:bg-green-400
-                focus:outline-none
+                text-4xl
+                shadow-lg
               "
             >
-              Back to HDOFOOT
-            </Link>
+              ⚽
+            </div>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="
-                tv-focus
-                flex
-                min-h-[52px]
-                flex-1
-                items-center
-                justify-center
-                rounded-xl
-                border
-                border-red-500/20
-                bg-red-500/10
-                px-6
-                font-semibold
-                text-red-400
-                transition
-                hover:border-red-500/40
-                hover:bg-red-500/15
-                focus:outline-none
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-              "
-            >
-              {loggingOut
-                ? "Signing out..."
-                : "Sign Out"}
-            </button>
+            <h2 className="mt-5 text-2xl font-bold">
+              HDOFOOT
+            </h2>
+
+            <p className="mt-2 max-w-md text-sm leading-6 text-gray-400">
+              Welcome to HDOFOOT. Enjoy football,
+              live matches, fixtures, leagues and
+              more.
+            </p>
 
           </div>
-
         </section>
 
-        {/* ACCOUNT INFORMATION */}
+        {/* =================================================
+            HELP
+            ================================================= */}
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-[#0d1118] p-6">
+        <section
+          className="
+            mt-6
+            rounded-2xl
+            border
+            border-white/10
+            bg-[#0d1118]
+            p-6
+            sm:p-8
+          "
+        >
+          <div className="mb-5">
+            <h2 className="text-xl font-bold">
+              Help
+            </h2>
 
-          <h2 className="text-lg font-bold">
-            Account
-          </h2>
-
-          <p className="mt-2 text-sm leading-6 text-gray-400">
-            Your HDOFOOT account is connected to
-            Supabase Authentication.
-          </p>
-
-          <div className="mt-5 rounded-xl border border-green-500/10 bg-green-500/5 p-4">
-            <p className="text-sm text-green-400">
-              ✓ Authentication is active
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-gray-500">
-              You can use your account across the
-              protected areas of the app.
+            <p className="mt-2 text-sm text-gray-400">
+              Need help or want to contact us?
             </p>
           </div>
 
+          {telegramUrl ? (
+            <a
+              href={telegramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                tv-focus
+                flex
+                min-h-[56px]
+                w-full
+                items-center
+                gap-4
+                rounded-xl
+                border
+                border-white/10
+                bg-[#07090d]
+                px-5
+                transition
+                hover:border-green-500/40
+                hover:bg-[#121821]
+                focus:outline-none
+              "
+            >
+              {/* Telegram icon */}
+
+              <div
+                className="
+                  flex
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-blue-500/15
+                  text-blue-400
+                "
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path d="M21.9 3.6 18.7 20c-.2 1.2-.9 1.5-1.8.9l-5-3.7-2.4 2.3c-.3.3-.5.5-1 .5l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.2L6.1 13.7 1.2 12c-1.1-.3-1.1-1 .2-1.5L20.5 3c.9-.3 1.7.2 1.4.6Z" />
+                </svg>
+              </div>
+
+              <div className="min-w-0 flex-1 text-left">
+                <p className="font-semibold text-white">
+                  Contact us on Telegram
+                </p>
+
+                <p className="mt-1 truncate text-sm text-gray-500">
+                  @{cleanTelegram}
+                </p>
+              </div>
+
+              <span className="text-gray-500">
+                →
+              </span>
+            </a>
+          ) : (
+            <div
+              className="
+                rounded-xl
+                border
+                border-white/10
+                bg-[#07090d]
+                p-4
+                text-sm
+                text-gray-500
+              "
+            >
+              Telegram contact is not configured.
+            </div>
+          )}
+        </section>
+
+        {/* =================================================
+            DONATE
+            ================================================= */}
+
+        <section
+          className="
+            mt-6
+            rounded-2xl
+            border
+            border-white/10
+            bg-[#0d1118]
+            p-6
+            sm:p-8
+          "
+        >
+          <div className="mb-5">
+            <h2 className="text-xl font-bold">
+              Donate
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-gray-400">
+              If you enjoy HDOFOOT and would like to
+              support the project, you can donate
+              using PayPal or Bitcoin.
+            </p>
+          </div>
+
+          {/* =================================================
+              PAYPAL
+              ================================================= */}
+
+          {paypalUrl && (
+            <button
+              type="button"
+              onClick={() => setShowPayPalQR(true)}
+              className="
+                tv-focus
+                flex
+                min-h-[60px]
+                w-full
+                items-center
+                gap-4
+                rounded-xl
+                border
+                border-white/10
+                bg-[#07090d]
+                px-5
+                text-left
+                transition
+                hover:border-blue-500/40
+                hover:bg-[#121821]
+                focus:outline-none
+              "
+            >
+              <div
+                className="
+                  flex
+                  h-11
+                  w-11
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-blue-500/15
+                  text-lg
+                  font-black
+                  text-blue-400
+                "
+              >
+                P
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-white">
+                  PayPal
+                </p>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  @{cleanPayPal}
+                </p>
+              </div>
+
+              <span className="text-gray-500">
+                →
+              </span>
+            </button>
+          )}
+
+          {/* =================================================
+              BITCOIN
+              ================================================= */}
+
+          {btcAddress && (
+            <div
+              className="
+                mt-3
+                rounded-xl
+                border
+                border-white/10
+                bg-[#07090d]
+                p-5
+              "
+            >
+              <div className="flex items-center gap-4">
+
+                <div
+                  className="
+                    flex
+                    h-11
+                    w-11
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-orange-500/15
+                    text-xl
+                    font-bold
+                    text-orange-400
+                  "
+                >
+                  ₿
+                </div>
+
+                <div className="min-w-0">
+                  <p className="font-semibold text-white">
+                    Bitcoin
+                  </p>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    BTC donation address
+                  </p>
+                </div>
+
+              </div>
+
+              <div
+                className="
+                  mt-4
+                  rounded-lg
+                  border
+                  border-white/10
+                  bg-[#0d1118]
+                  p-3
+                "
+              >
+                <p
+                  className="
+                    break-all
+                    text-xs
+                    leading-5
+                    text-gray-400
+                  "
+                >
+                  {btcAddress}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!paypalUrl && !btcAddress && (
+            <div
+              className="
+                rounded-xl
+                border
+                border-white/10
+                bg-[#07090d]
+                p-4
+                text-sm
+                text-gray-500
+              "
+            >
+              Donation options are not configured.
+            </div>
+          )}
+        </section>
+
+        {/* =================================================
+            NAVIGATION
+            ================================================= */}
+
+        <section
+          className="
+            mt-6
+            rounded-2xl
+            border
+            border-white/10
+            bg-[#0d1118]
+            p-6
+          "
+        >
+          <Link
+            href="/"
+            className="
+              tv-focus
+              flex
+              min-h-[52px]
+              w-full
+              items-center
+              justify-center
+              rounded-xl
+              bg-green-500
+              px-6
+              font-bold
+              text-black
+              transition
+              hover:bg-green-400
+              focus:outline-none
+            "
+          >
+            Back to HDOFOOT
+          </Link>
         </section>
 
       </div>
+
+      {/* =================================================
+          PAYPAL QR MODAL
+          ================================================= */}
+
+      {showPayPalQR && paypalUrl && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[110]
+            flex
+            items-center
+            justify-center
+            bg-black/85
+            px-4
+            backdrop-blur-sm
+          "
+          onClick={() => setShowPayPalQR(false)}
+        >
+          <div
+            className="
+              w-full
+              max-w-sm
+              rounded-2xl
+              border
+              border-white/10
+              bg-[#0d1118]
+              p-6
+              text-center
+              shadow-2xl
+            "
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+
+            <h2 className="text-xl font-bold">
+              PayPal Donation
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Scan this QR code to open PayPal.
+            </p>
+
+            {/* QR CODE */}
+
+            <div
+              className="
+                mx-auto
+                mt-6
+                flex
+                w-fit
+                rounded-2xl
+                bg-white
+                p-4
+              "
+            >
+              <QRCodeSVG
+                value={paypalUrl}
+                size={220}
+                level="M"
+              />
+            </div>
+
+            <p className="mt-5 text-sm text-gray-400">
+              PayPal: @{cleanPayPal}
+            </p>
+
+            {/* OPEN PAYPAL */}
+
+            <a
+              href={paypalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                tv-focus
+                mt-5
+                flex
+                min-h-[50px]
+                w-full
+                items-center
+                justify-center
+                rounded-xl
+                bg-blue-500
+                px-5
+                font-bold
+                text-white
+                transition
+                hover:bg-blue-400
+                focus:outline-none
+              "
+            >
+              Open PayPal
+            </a>
+
+            {/* CLOSE */}
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowPayPalQR(false)
+              }
+              className="
+                tv-focus
+                mt-3
+                min-h-[50px]
+                w-full
+                rounded-xl
+                border
+                border-white/10
+                bg-[#07090d]
+                px-5
+                font-semibold
+                text-white
+                transition
+                hover:bg-[#121821]
+                focus:outline-none
+              "
+            >
+              Close
+            </button>
+
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 
 interface RouteProps {
   params: Promise<{
@@ -11,72 +10,78 @@ export async function GET(
   request: Request,
   { params }: RouteProps
 ) {
-  /*
-   * Verify the Supabase session before
-   * allowing access to TMDB data.
-   */
-  const supabase = await createClient();
+  try {
+    const { id } = await params;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    if (!id) {
+      return NextResponse.json(
+        {
+          error: "Missing TV show ID",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
-  if (!user) {
-    return NextResponse.json(
+    const apiKey = process.env.TMDB_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error: "TMDB API key is not configured",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${encodeURIComponent(
+        id
+      )}?api_key=${encodeURIComponent(
+        apiKey
+      )}&language=en-US`,
       {
-        error: "Unauthorized",
-      },
-      {
-        status: 401,
+        next: {
+          revalidate: 3600,
+        },
       }
     );
-  }
 
-  const { id } = await params;
+    if (!res.ok) {
+      return NextResponse.json(
+        {
+          error: "TV show not found",
+        },
+        {
+          status: res.status,
+        }
+      );
+    }
 
-  const apiKey = process.env.TMDB_API_KEY;
+    const data = await res.json();
 
-  if (!apiKey) {
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control":
+          "private, max-age=3600",
+      },
+    });
+  } catch (error) {
+    console.error(
+      "TV show API error:",
+      error
+    );
+
     return NextResponse.json(
       {
-        error: "TMDB API key is not configured",
+        error: "Failed to load TV show",
       },
       {
         status: 500,
       }
     );
   }
-
-  const res = await fetch(
-    `https://api.themoviedb.org/3/tv/${encodeURIComponent(
-      id
-    )}?api_key=${encodeURIComponent(
-      apiKey
-    )}&language=en-US`,
-    {
-      next: {
-        revalidate: 3600,
-      },
-    }
-  );
-
-  if (!res.ok) {
-    return NextResponse.json(
-      {
-        error: "TV show not found",
-      },
-      {
-        status: res.status,
-      }
-    );
-  }
-
-  const data = await res.json();
-
-  return NextResponse.json(data, {
-    headers: {
-      "Cache-Control":
-        "private, max-age=3600",
-    },
-  });
-} 
+}

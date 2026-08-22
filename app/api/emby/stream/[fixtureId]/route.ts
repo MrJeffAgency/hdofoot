@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/supabase/auth";
 
 const API_FOOTBALL_URL =
   "https://v3.football.api-sports.io";
@@ -29,32 +28,47 @@ function teamScore(
   team: string,
   itemName: string
 ): number {
-  const teamNormalized = normalize(team);
-  const itemNormalized = normalize(itemName);
+  const teamNormalized =
+    normalize(team);
 
-  if (!teamNormalized || !itemNormalized) {
+  const itemNormalized =
+    normalize(itemName);
+
+  if (
+    !teamNormalized ||
+    !itemNormalized
+  ) {
     return 0;
   }
 
-  if (itemNormalized.includes(teamNormalized)) {
+  if (
+    itemNormalized.includes(
+      teamNormalized
+    )
+  ) {
     return 40;
   }
 
   const words = team
     .split(/\s+/)
     .map((word) => normalize(word))
-    .filter((word) => word.length >= 4);
+    .filter(
+      (word) => word.length >= 4
+    );
 
   if (words.length === 0) {
     return 0;
   }
 
-  const matchedWords = words.filter((word) =>
-    itemNormalized.includes(word)
-  );
+  const matchedWords =
+    words.filter((word) =>
+      itemNormalized.includes(word)
+    );
 
   return Math.round(
-    (matchedWords.length / words.length) * 30
+    (matchedWords.length /
+      words.length) *
+      30
   );
 }
 
@@ -74,9 +88,8 @@ function dateScore(
   const month = match[2];
   const day = match[3];
 
-  const fixtureTime = new Date(
-    fixtureDate
-  ).getTime();
+  const fixtureTime =
+    new Date(fixtureDate).getTime();
 
   const itemTime = new Date(
     `${year}-${month.padStart(
@@ -101,7 +114,9 @@ function dateScore(
     ) /
     (1000 * 60 * 60 * 24);
 
-  return difference <= 1 ? 15 : 0;
+  return difference <= 1
+    ? 15
+    : 0;
 }
 
 function footballNameScore(
@@ -120,31 +135,17 @@ function footballNameScore(
     "cup",
   ];
 
-  return footballWords.some((word) =>
-    value.includes(normalize(word))
+  return footballWords.some(
+    (word) =>
+      value.includes(
+        normalize(word)
+      )
   )
     ? 5
     : 0;
 }
 
 export async function GET() {
-  /*
-   * Verify the Supabase session before allowing
-   * access to the Emby/API-Football mapping.
-   */
-  const user = await requireUser();
-
-  if (!user) {
-    return NextResponse.json(
-      {
-        error: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
-  }
-
   const serverUrl =
     process.env.EMBY_SERVER_URL?.replace(
       /\/$/,
@@ -366,8 +367,11 @@ export async function GET() {
             b.score - a.score
         );
 
-      const best = candidates[0];
-      const second = candidates[1];
+      const best =
+        candidates[0];
+
+      const second =
+        candidates[1];
 
       const validEmbyMatch =
         !!best &&
