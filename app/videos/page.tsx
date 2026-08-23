@@ -1,665 +1,448 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
+import LocalVideoPlayer from "@/components/LocalVideoPlayer";
 
-interface LocalVideoPlayerProps {
+interface LocalVideo {
+  id: string;
   file: File;
-  title: string;
-  onClose?: () => void;
+  name: string;
+  size: number;
+  type: string;
 }
 
-export default function LocalVideoPlayer({
-  file,
-  title,
-  onClose,
-}: LocalVideoPlayerProps) {
-  const videoRef =
-    useRef<HTMLVideoElement | null>(null);
+export default function VideosPage() {
+  const [videos, setVideos] = useState<LocalVideo[]>([]);
+  const [selectedVideo, setSelectedVideo] =
+    useState<LocalVideo | null>(null);
 
-  const [videoUrl, setVideoUrl] =
-    useState<string>("");
-
-  const [error, setError] =
-    useState<string>("");
-
-  const [isPlaying, setIsPlaying] =
-    useState(false);
-
-  const [currentTime, setCurrentTime] =
-    useState(0);
-
-  const [duration, setDuration] =
-    useState(0);
-
-  const [volume, setVolume] =
-    useState(1);
-
-  const [muted, setMuted] =
-    useState(false);
-
-  const [ready, setReady] =
-    useState(false);
+  const [error, setError] = useState("");
 
   /* -------------------------------------------------------- */
-  /* CREATE OBJECT URL */
+  /* LOAD FILES */
   /* -------------------------------------------------------- */
 
-  useEffect(() => {
-    if (!file) {
+  function handleFiles(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const files = Array.from(
+      event.target.files || []
+    );
+
+    if (files.length === 0) {
       return;
     }
 
     setError("");
-    setReady(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setIsPlaying(false);
 
-    const url =
-      URL.createObjectURL(file);
-
-    setVideoUrl(url);
-
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [file]);
-
-  /* -------------------------------------------------------- */
-  /* CLEAN VIDEO WHEN URL CHANGES */
-  /* -------------------------------------------------------- */
-
-  useEffect(() => {
-    const video =
-      videoRef.current;
-
-    if (!video || !videoUrl) {
-      return;
-    }
-
-    video.load();
-
-    return () => {
-      video.pause();
-      video.removeAttribute("src");
-      video.load();
-    };
-  }, [videoUrl]);
-
-  /* -------------------------------------------------------- */
-  /* PLAY / PAUSE */
-  /* -------------------------------------------------------- */
-
-  async function togglePlay() {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    try {
-      if (video.paused) {
-        await video.play();
-      } else {
-        video.pause();
-      }
-    } catch (err) {
-      console.error(
-        "Video play error:",
-        err
+    const videoFiles = files.filter((file) => {
+      return (
+        file.type.startsWith("video/") ||
+        /\.(mp4|mkv|webm|mov|m4v|avi|ts)$/i.test(
+          file.name
+        )
       );
+    });
 
+    if (videoFiles.length === 0) {
       setError(
-        "The browser could not play this video. The file may use a codec that Android/browser does not support."
+        "No supported video files were selected."
       );
-    }
-  }
-
-  /* -------------------------------------------------------- */
-  /* VIDEO EVENTS */
-  /* -------------------------------------------------------- */
-
-  function handlePlay() {
-    setIsPlaying(true);
-  }
-
-  function handlePause() {
-    setIsPlaying(false);
-  }
-
-  function handleTimeUpdate() {
-    const video =
-      videoRef.current;
-
-    if (!video) {
       return;
     }
 
-    setCurrentTime(
-      video.currentTime
-    );
-  }
+    const newVideos: LocalVideo[] =
+      videoFiles.map((file, index) => ({
+        id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
+        file,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      }));
 
-  function handleLoadedMetadata() {
-    const video =
-      videoRef.current;
+    setVideos((current) => {
+      const existingIds = new Set(
+        current.map((video) => video.id)
+      );
 
-    if (!video) {
-      return;
+      return [
+        ...current,
+        ...newVideos.filter(
+          (video) =>
+            !existingIds.has(video.id)
+        ),
+      ];
+    });
+
+    /*
+     * Select the first newly added video.
+     */
+    if (newVideos[0]) {
+      setSelectedVideo(newVideos[0]);
     }
 
-    if (
-      Number.isFinite(
-        video.duration
+    /*
+     * Allow selecting the same file again.
+     */
+    event.target.value = "";
+  }
+
+  /* -------------------------------------------------------- */
+  /* REMOVE VIDEO */
+  /* -------------------------------------------------------- */
+
+  function removeVideo(id: string) {
+    setVideos((current) =>
+      current.filter(
+        (video) => video.id !== id
       )
-    ) {
-      setDuration(
-        video.duration
-      );
-    }
+    );
+
+    setSelectedVideo((current) => {
+      if (!current || current.id !== id) {
+        return current;
+      }
+
+      return null;
+    });
   }
 
-  function handleCanPlay() {
-    setReady(true);
+  /* -------------------------------------------------------- */
+  /* CLEAR ALL */
+  /* -------------------------------------------------------- */
+
+  function clearVideos() {
+    setVideos([]);
+    setSelectedVideo(null);
     setError("");
   }
 
-  function handleEnded() {
-    setIsPlaying(false);
+  /* -------------------------------------------------------- */
+  /* FORMAT SIZE */
+  /* -------------------------------------------------------- */
+
+  function formatSize(bytes: number) {
+    if (bytes < 1024 * 1024) {
+      return `${Math.round(
+        bytes / 1024
+      )} KB`;
+    }
+
+    if (bytes < 1024 * 1024 * 1024) {
+      return `${(
+        bytes /
+        (1024 * 1024)
+      ).toFixed(1)} MB`;
+    }
+
+    return `${(
+      bytes /
+      (1024 * 1024 * 1024)
+    ).toFixed(2)} GB`;
   }
-
-  /* -------------------------------------------------------- */
-  /* VIDEO ERROR */
-  /* -------------------------------------------------------- */
-
-  function handleVideoError() {
-    const video =
-      videoRef.current;
-
-    console.error(
-      "Local video playback error:",
-      video?.error
-    );
-
-    setReady(false);
-
-    setError(
-      "This video cannot be played by your browser. MP4 videos using H.264 video and AAC audio are the most compatible."
-    );
-  }
-
-  /* -------------------------------------------------------- */
-  /* SEEK */
-  /* -------------------------------------------------------- */
-
-  function handleSeek(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    const value =
-      Number(event.target.value);
-
-    video.currentTime =
-      value;
-
-    setCurrentTime(
-      value
-    );
-  }
-
-  /* -------------------------------------------------------- */
-  /* VOLUME */
-  /* -------------------------------------------------------- */
-
-  function handleVolume(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    const value =
-      Number(event.target.value);
-
-    video.volume =
-      value;
-
-    setVolume(value);
-
-    if (value > 0) {
-      video.muted = false;
-      setMuted(false);
-    }
-  }
-
-  function toggleMute() {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    video.muted =
-      !video.muted;
-
-    setMuted(
-      video.muted
-    );
-  }
-
-  /* -------------------------------------------------------- */
-  /* SKIP */
-  /* -------------------------------------------------------- */
-
-  function skip(seconds: number) {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    const next =
-      Math.min(
-        Math.max(
-          video.currentTime +
-            seconds,
-          0
-        ),
-        video.duration || Infinity
-      );
-
-    video.currentTime =
-      next;
-
-    setCurrentTime(
-      next
-    );
-  }
-
-  /* -------------------------------------------------------- */
-  /* FULLSCREEN */
-  /* -------------------------------------------------------- */
-
-  async function enterFullscreen() {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    try {
-      if (
-        document.fullscreenElement
-      ) {
-        await document.exitFullscreen();
-        return;
-      }
-
-      if (
-        video.requestFullscreen
-      ) {
-        await video.requestFullscreen();
-      }
-    } catch (err) {
-      console.warn(
-        "Fullscreen unavailable:",
-        err
-      );
-    }
-  }
-
-  /* -------------------------------------------------------- */
-  /* FORMAT TIME */
-  /* -------------------------------------------------------- */
-
-  function formatTime(
-    seconds: number
-  ) {
-    if (
-      !Number.isFinite(
-        seconds
-      ) ||
-      seconds < 0
-    ) {
-      return "0:00";
-    }
-
-    const total =
-      Math.floor(seconds);
-
-    const hours =
-      Math.floor(
-        total / 3600
-      );
-
-    const minutes =
-      Math.floor(
-        (total % 3600) /
-          60
-      );
-
-    const secs =
-      total % 60;
-
-    if (hours > 0) {
-      return `${hours}:${String(
-        minutes
-      ).padStart(
-        2,
-        "0"
-      )}:${String(
-        secs
-      ).padStart(
-        2,
-        "0"
-      )}`;
-    }
-
-    return `${minutes}:${String(
-      secs
-    ).padStart(
-      2,
-      "0"
-    )}`;
-  }
-
-  /* -------------------------------------------------------- */
-  /* RENDER */
-  /* -------------------------------------------------------- */
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+    <main className="min-h-screen bg-[#07090d] text-white">
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-[#0d1118] px-4 py-3">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-5 md:px-6 lg:px-8">
 
-        <div className="min-w-0">
-          <h2 className="truncate text-sm font-bold text-white">
-            {title}
-          </h2>
+        {/* HEADER */}
 
-          <p className="mt-1 truncate text-xs text-gray-500">
-            {file.name}
-          </p>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+          <div className="min-w-0">
+
+            <p className="text-xs font-bold uppercase tracking-widest text-green-400">
+              HDOFOOT
+            </p>
+
+            <h1 className="mt-2 text-3xl font-black sm:text-4xl">
+              My Videos
+            </h1>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Play video files directly from your device.
+            </p>
+
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+
+            {/* FILE PICKER */}
+
+            <label
+              className="
+                tv-focus
+                tv-nav-item
+                inline-flex
+                min-h-[48px]
+                cursor-pointer
+                items-center
+                justify-center
+                rounded-xl
+                bg-green-500
+                px-5
+                font-bold
+                text-black
+              "
+            >
+              <input
+                type="file"
+                accept="video/*,.mkv,.avi,.ts,.mov,.m4v"
+                multiple
+                onChange={handleFiles}
+                className="hidden"
+              />
+
+              + Add Videos
+            </label>
+
+            {videos.length > 0 && (
+              <button
+                type="button"
+                onClick={clearVideos}
+                className="
+                  tv-focus
+                  tv-nav-item
+                  min-h-[48px]
+                  rounded-xl
+                  border
+                  border-white/10
+                  bg-white/5
+                  px-5
+                  font-semibold
+                  text-gray-300
+                "
+              >
+                Clear All
+              </button>
+            )}
+
+          </div>
+
         </div>
 
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="
-              tv-focus
-              tv-nav-item
-              flex
-              h-10
-              w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-xl
-              bg-white/5
-              text-gray-300
-            "
-            aria-label="Close player"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="h-5 w-5"
-            >
-              <path d="M6 6l12 12" />
-              <path d="M18 6 6 18" />
-            </svg>
-          </button>
-        )}
-
-      </div>
-
-      {/* PLAYER */}
-      <div className="relative aspect-video w-full bg-black">
-
-        {!videoUrl && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-green-500/20 border-t-green-400" />
-
-              <p className="mt-3 text-sm text-gray-500">
-                Loading video...
-              </p>
-            </div>
-          </div>
-        )}
-
-        {videoUrl && (
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            playsInline
-            preload="auto"
-            controls
-            controlsList="nodownload"
-            className="h-full w-full bg-black object-contain"
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={
-              handleLoadedMetadata
-            }
-            onCanPlay={handleCanPlay}
-            onEnded={handleEnded}
-            onError={handleVideoError}
-          />
-        )}
-
-        {/* LOADING */}
-        {videoUrl && !ready && !error && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
-            <div className="rounded-xl bg-black/70 px-5 py-3 text-center">
-              <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-green-400" />
-
-              <p className="mt-2 text-xs text-gray-400">
-                Preparing video...
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* ERROR */}
+
         {error && (
-          <div className="absolute inset-x-0 bottom-0 bg-red-950/95 p-4">
-            <p className="text-center text-sm font-semibold text-red-300">
+          <div className="mb-5 rounded-xl border border-red-500/20 bg-red-950/50 p-4">
+            <p className="text-sm font-semibold text-red-300">
               {error}
             </p>
           </div>
         )}
 
-      </div>
+        {/* EMPTY STATE */}
 
-      {/* CONTROLS */}
-      <div className="bg-[#0d1118] p-4">
+        {videos.length === 0 && (
+          <section className="rounded-2xl border border-white/10 bg-[#0d1118] p-8 text-center sm:p-12">
 
-        {/* PROGRESS */}
-        {duration > 0 && (
-          <input
-            type="range"
-            min="0"
-            max={duration}
-            step="0.1"
-            value={currentTime}
-            onChange={
-              handleSeek
-            }
-            className="w-full accent-green-500"
-            aria-label="Video progress"
-          />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/10">
+
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-8 w-8 text-green-400"
+              >
+                <path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+                <path d="m10 9 5 3-5 3V9Z" />
+              </svg>
+
+            </div>
+
+            <h2 className="mt-5 text-xl font-bold">
+              No videos selected
+            </h2>
+
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+              Select one or more videos from your phone,
+              tablet, or Android TV device to play them
+              directly in HDOFOOT.
+            </p>
+
+            <label
+              className="
+                tv-focus
+                tv-nav-item
+                mx-auto
+                mt-6
+                inline-flex
+                min-h-[48px]
+                cursor-pointer
+                items-center
+                rounded-xl
+                bg-green-500
+                px-6
+                font-bold
+                text-black
+              "
+            >
+              <input
+                type="file"
+                accept="video/*,.mkv,.avi,.ts,.mov,.m4v"
+                multiple
+                onChange={handleFiles}
+                className="hidden"
+              />
+
+              Choose Video
+            </label>
+
+          </section>
         )}
 
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        {/* PLAYER */}
 
-          {/* PLAY */}
-          <button
-            type="button"
-            onClick={togglePlay}
-            className="
-              tv-focus
-              tv-nav-item
-              min-h-[44px]
-              rounded-xl
-              bg-green-500
-              px-5
-              font-bold
-              text-black
-            "
-          >
-            {isPlaying
-              ? "Pause"
-              : "Play"}
-          </button>
+        {selectedVideo && (
+          <section className="mb-8">
 
-          {/* BACK */}
-          <button
-            type="button"
-            onClick={() =>
-              skip(-10)
-            }
-            className="
-              tv-focus
-              tv-nav-item
-              min-h-[44px]
-              rounded-xl
-              border
-              border-white/10
-              bg-white/5
-              px-4
-              text-sm
-              font-semibold
-              text-white
-            "
-          >
-            −10s
-          </button>
+            <LocalVideoPlayer
+              file={selectedVideo.file}
+              title={selectedVideo.name}
+              onClose={() =>
+                setSelectedVideo(null)
+              }
+            />
 
-          {/* FORWARD */}
-          <button
-            type="button"
-            onClick={() =>
-              skip(10)
-            }
-            className="
-              tv-focus
-              tv-nav-item
-              min-h-[44px]
-              rounded-xl
-              border
-              border-white/10
-              bg-white/5
-              px-4
-              text-sm
-              font-semibold
-              text-white
-            "
-          >
-            +10s
-          </button>
+          </section>
+        )}
 
-          {/* TIME */}
-          <span className="text-xs text-gray-500">
-            {formatTime(
-              currentTime
-            )}{" "}
-            /{" "}
-            {formatTime(
-              duration
-            )}
-          </span>
+        {/* VIDEO LIST */}
 
-          {/* MUTE */}
-          <button
-            type="button"
-            onClick={toggleMute}
-            className="
-              tv-focus
-              tv-nav-item
-              ml-auto
-              min-h-[44px]
-              rounded-xl
-              border
-              border-white/10
-              bg-white/5
-              px-4
-              text-sm
-              font-semibold
-              text-gray-300
-            "
-          >
-            {muted
-              ? "Unmute"
-              : "Mute"}
-          </button>
+        {videos.length > 0 && (
+          <section>
 
-          {/* VOLUME */}
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={
-              muted
-                ? 0
-                : volume
-            }
-            onChange={
-              handleVolume
-            }
-            className="w-24 accent-green-500"
-            aria-label="Volume"
-          />
+            <div className="mb-4 flex items-center justify-between">
 
-          {/* FULLSCREEN */}
-          <button
-            type="button"
-            onClick={
-              enterFullscreen
-            }
-            className="
-              tv-focus
-              tv-nav-item
-              min-h-[44px]
-              rounded-xl
-              border
-              border-white/10
-              bg-white/5
-              px-4
-              text-sm
-              font-semibold
-              text-gray-300
-            "
-          >
-            Fullscreen
-          </button>
+              <div>
+                <h2 className="text-xl font-bold">
+                  Your Videos
+                </h2>
 
-        </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  {videos.length}{" "}
+                  {videos.length === 1
+                    ? "video"
+                    : "videos"}{" "}
+                  loaded
+                </p>
+              </div>
+
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+              {videos.map((video) => {
+                const isSelected =
+                  selectedVideo?.id === video.id;
+
+                return (
+                  <div
+                    key={video.id}
+                    className={`
+                      overflow-hidden
+                      rounded-2xl
+                      border
+                      bg-[#0d1118]
+                      transition
+                      ${
+                        isSelected
+                          ? "border-green-500/60"
+                          : "border-white/10"
+                      }
+                    `}
+                  >
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedVideo(video)
+                      }
+                      className="
+                        tv-focus
+                        tv-nav-item
+                        block
+                        w-full
+                        text-left
+                      "
+                    >
+
+                      <div className="flex aspect-video items-center justify-center bg-black">
+
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="h-10 w-10 text-green-400"
+                        >
+                          <rect
+                            x="3"
+                            y="5"
+                            width="18"
+                            height="14"
+                            rx="2"
+                          />
+
+                          <path d="m10 9 5 3-5 3V9Z" />
+                        </svg>
+
+                      </div>
+
+                      <div className="p-4">
+
+                        <h3 className="truncate text-sm font-bold text-white">
+                          {video.name}
+                        </h3>
+
+                        <p className="mt-1 text-xs text-gray-500">
+                          {formatSize(
+                            video.size
+                          )}
+                        </p>
+
+                      </div>
+
+                    </button>
+
+                    <div className="border-t border-white/10 p-3">
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeVideo(video.id)
+                        }
+                        className="
+                          tv-focus
+                          tv-nav-item
+                          w-full
+                          rounded-lg
+                          px-3
+                          py-2
+                          text-xs
+                          font-semibold
+                          text-red-400
+                          hover:bg-red-500/10
+                        "
+                      >
+                        Remove
+                      </button>
+
+                    </div>
+
+                  </div>
+                );
+              })}
+
+            </div>
+
+          </section>
+        )}
+
       </div>
 
-    </div>
+    </main>
   );
 }
