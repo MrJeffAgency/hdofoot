@@ -2,25 +2,34 @@ HDOFOOT ⚽
 
 HDOFOOT is a responsive football streaming and match-information web app built with Next.js, React, TypeScript, and Tailwind CSS.
 
-It combines real football match data, live match information, fixtures, match centers, IPTV/live streams, and TV-friendly navigation into one responsive experience.
+It combines football fixtures, live match information, leagues, teams, Match Center pages, live streaming, IPTV channels, entertainment content, and Android TV-friendly navigation into one responsive experience.
 
-Features
+---
 
-⚽ Football
+⚽ Features
+
+Football
 
 - ⚽ Football home page
 - 🔴 Live match information
 - 📅 Upcoming fixtures
-- 🏆 Leagues
+- 🏆 Leagues and competitions
 - 👥 Teams
 - 📊 Match Center
-- 🏟️ Match details and live scores
+- 🏟️ Match details
 - ⏱️ Live match status and elapsed time
+- 🏆 League information
+- ⚽ Team names, logos, and scores
 - 🌍 Multiple football competitions
 
 📡 Live Match Data
 
+HDOFOOT retrieves football scoreboard information and normalizes it through "lib/football.ts".
+
+Features include:
+
 - ESPN soccer scoreboard integration
+- TheSportsDB fallback
 - Real football fixtures
 - Live match detection
 - Upcoming match detection
@@ -31,7 +40,7 @@ Features
 - Match Center links
 - Automatic data refresh
 
-Supported competitions include:
+Supported Competitions
 
 - Premier League
 - La Liga
@@ -47,81 +56,147 @@ Supported competitions include:
 - UEFA Europa League
 - UEFA Conference League
 
-📺 Live Streaming
+---
 
-- IPTV/live channel section
-- "data/live.json" channel database
+📺 Live Streaming & IPTV
+
+HDOFOOT includes a separate live-streaming system for available IPTV channels.
+
+Features include:
+
+- 📺 Live TV channels
+- 📡 IPTV channel section
 - HLS ".m3u8" playback
-- Live channel logos
+- Channel logos
 - Channel categories
 - LivePlayer component
 - Watch Live controls
+- M3U/M3U8-based streaming support
 
-Important: ESPN match data and IPTV/live streams are separate systems.
+Live channels are stored in:
 
-ESPN is used for football match information, scores, fixtures, and Match Center data.
+data/live.json
 
-"data/live.json" is used for available live video streams.
+Important
+
+Football match information and live video streams are separate systems.
+
+Football data
+
+ESPN
+  ↓
+Fixtures
+Scores
+Match status
+League data
+Team data
+Match Center
+
+Live streaming
+
+data/live.json
+  ↓
+Live channels
+  ↓
+HLS .m3u8 streams
+  ↓
+LivePlayer
+
+This separation allows football information to continue working independently from the IPTV/live-streaming system.
+
+---
 
 🎬 Entertainment
 
+HDOFOOT also includes entertainment sections such as:
+
 - 🎬 Movies
 - 📺 TV Shows
-- ▶️ Videos
-- WWE section
+- ▶️ Local Videos
+- WWE
+
+The local video library allows supported video files stored on the user's device to be accessed through the HDOFOOT interface without uploading those files to the application server.
+
+---
 
 📱 Responsive Interface
 
-- Mobile-friendly layout
-- Desktop interface
-- Android TV support
-- D-pad navigation
-- Keyboard-friendly navigation
-- TV focus states
-- Touch-friendly controls
-- Mobile bottom navigation
-- Desktop sidebar navigation
-
-Navigation
+HDOFOOT is designed for multiple screen types.
 
 Mobile
 
-The mobile interface uses a bottom navigation bar for quick access to:
+The mobile interface includes a touch-friendly bottom navigation bar with:
 
-- Home
-- Live
-- Fixtures
-- Leagues
-- Teams
+- 🏠 Home
+- 🔴 Live
+- 📅 Fixtures
+- 🏆 Leagues
+- 👥 Teams
 
 Desktop
 
-The desktop interface uses a sidebar navigation system.
+The desktop interface uses a sidebar navigation system for quick access to the main sections.
 
 Android TV
 
-HDOFOOT includes TV-friendly navigation with:
+HDOFOOT includes TV-friendly navigation designed for remote controls and D-pad input.
 
-- D-pad focus support
+Features include:
+
+- D-pad navigation
+- Keyboard navigation
 - ".tv-focus"
 - ".tv-nav-item"
-- Clear keyboard/focus states
-- Large touch/D-pad targets
+- Clear focus states
+- Large navigation targets
 - TV-friendly navigation paths
+- Touch-friendly controls
 
-Technology
+---
+
+🧭 Navigation
+
+Mobile
+
+Home
+Live
+Fixtures
+Leagues
+Teams
+
+Desktop
+
+Sidebar
+├── Home
+├── Live Matches
+├── Fixtures
+├── Leagues
+└── Teams
+
+Android TV
+
+The interface uses the same core navigation while adding D-pad-friendly focus states and larger interactive targets.
+
+---
+
+🛠️ Technology
+
+HDOFOOT is built with:
 
 - Next.js 16
 - React
 - TypeScript
 - Tailwind CSS
 - ESPN Soccer API
+- TheSportsDB
 - HLS playback
-- Supabase authentication
-- Emby integration
-- IPTV/M3U8 streams
+- Supabase
+- Emby
+- IPTV / M3U8 streams
 
-Project Structure
+---
+
+📁 Project Structure
 
 app/
 ├── page.tsx
@@ -135,11 +210,13 @@ app/
 ├── wwe/
 ├── movie/
 ├── tv/
+├── videos/
 └── ...
 
 components/
 ├── LiveMatches.tsx
 ├── LivePlayer.tsx
+├── LocalVideoPlayer.tsx
 ├── Icons.tsx
 ├── MobileNav.tsx
 ├── Sidebar.tsx
@@ -154,13 +231,15 @@ lib/
 public/
 └── football-hero.jpg
 
-Football Data
+---
 
-Football match data is normalized through:
+⚽ Football Data Architecture
+
+Football data is normalized through:
 
 lib/football.ts
 
-The application retrieves scoreboard data, normalizes the ESPN response, and converts it into the fixture structure used throughout HDOFOOT.
+The application retrieves scoreboard data, normalizes the responses, and converts them into the fixture structure used throughout HDOFOOT.
 
 The normalized fixture structure contains:
 
@@ -176,19 +255,29 @@ league
 
 teams
 ├── home
+│   ├── id
+│   ├── name
+│   ├── logo
+│   └── winner
 └── away
+    ├── id
+    ├── name
+    ├── logo
+    └── winner
 
 goals
 ├── home
 └── away
 
-Live Streams
+---
 
-Live video channels are stored separately in:
+📡 Live Stream Data
+
+Live channels are stored separately in:
 
 data/live.json
 
-Each channel can contain:
+A channel can contain information such as:
 
 {
   "id": "channel-id",
@@ -198,27 +287,77 @@ Each channel can contain:
   "stream": "https://example.com/live/stream.m3u8"
 }
 
-The "LiveMatches" component handles the live-stream interface and uses "LivePlayer" for HLS playback.
+The live-streaming interface uses "LivePlayer" to handle supported HLS streams.
 
-Match Center
+---
+
+🏟️ Match Center
 
 Football matches use the route:
 
 /match/[fixtureId]
 
-Example:
+For example:
 
 /match/401879322
 
-The Match Center displays information for the selected ESPN fixture.
+The Match Center provides information for the selected football fixture, including available match information, teams, scores, competition details, and live status.
 
-Development
+---
 
-Install dependencies:
+🎥 Local Video Library
+
+HDOFOOT can access supported video files stored locally on the user's device.
+
+The video library uses the browser's local file/folder access capabilities rather than uploading the user's personal videos to the HDOFOOT server.
+
+Supported formats depend on the browser and device. MP4 using H.264/AAC is recommended for the widest compatibility.
+
+The local video system includes:
+
+app/videos/
+    ↓
+Local video library
+    ↓
+LocalVideoPlayer
+    ↓
+Browser / Android video playback
+
+---
+
+🔐 Authentication
+
+HDOFOOT can use Supabase authentication for protected application areas and server-side authentication checks.
+
+Private configuration should be stored in environment variables and should never be committed to Git.
+
+---
+
+🚀 Development
+
+1. Clone the repository
+
+git clone <your-repository-url>
+cd hdofoot
+
+2. Install dependencies
 
 npm install
 
-Start the development server:
+3. Configure environment variables
+
+Create:
+
+.env.local
+
+Example:
+
+API_FOOTBALL_KEY=your_api_key
+TMDB_API_KEY=your_tmdb_key
+
+Add any additional configuration required by the project, including Supabase, Emby, authentication, or streaming services.
+
+4. Start the development server
 
 npm run dev
 
@@ -226,7 +365,9 @@ Open:
 
 http://localhost:3000
 
-Build
+---
+
+🏗️ Production Build
 
 Create a production build:
 
@@ -236,37 +377,71 @@ Start the production server:
 
 npm start
 
-Environment Variables
+---
 
-Create a ".env.local" file for required private configuration.
-
-Example:
-
-API_FOOTBALL_KEY=your_api_key
-TMDB_API_KEY=your_tmdb_key
-
-Add any additional authentication, Supabase, Emby, or streaming configuration required by the project.
-
-Architecture
+🧩 Architecture
 
 HDOFOOT separates football information from video streaming.
 
-                    HDOFOOT
-                       │
-        ┌──────────────┴──────────────┐
-        │                             │
- Football Match Data             Live Streaming
-        │                             │
-       ESPN                     data/live.json
-        │                             │
-        ▼                             ▼
- Fixtures / Scores              Live Channels
- Match Center                   HLS Streams
- League Data                    LivePlayer
- Team Data
+                         HDOFOOT
+                            │
+             ┌──────────────┴──────────────┐
+             │                             │
+      Football Data                 Live Streaming
+             │                             │
+      ┌──────┴──────┐                 data/live.json
+      │             │                       │
+    ESPN       TheSportsDB                   │
+      │             │                       ▼
+      └──────┬──────┘                Live Channels
+             │                        HLS Streams
+             ▼                        LivePlayer
+        lib/football.ts
+             │
+     ┌───────┼────────┐
+     │       │        │
+ Fixtures  Scores  Match Center
+     │       │        │
+     └───────┴────────┘
 
-This allows football match information to continue working independently from the IPTV/live-stream system.
+This architecture keeps football data and video streaming independent, making the application easier to maintain and expand.
 
-License
+---
 
-This project is for personal development and testing purposes.
+📱 Platform Support
+
+HDOFOOT is designed to work across:
+
+- 📱 Android phones
+- 📱 Mobile browsers
+- 💻 Desktop browsers
+- 📺 Android TV
+- 🖥️ Large-screen displays
+
+The interface adapts navigation and controls depending on the device and input method.
+
+---
+
+🔒 Privacy & Security
+
+HDOFOOT should not store private API keys, authentication secrets, or other sensitive configuration in the Git repository.
+
+Use environment variables for private configuration.
+
+Local videos accessed through the browser's file/folder APIs remain on the user's device unless the application explicitly implements a separate upload feature.
+
+---
+
+📌 Project Status
+
+HDOFOOT is an actively developed project.
+
+Features and supported data sources may change as the application evolves.
+
+---
+
+📄 License
+
+This project is intended for personal development and testing purposes.
+
+Use third-party APIs, media, logos, streams, and other content according to their respective terms, licenses, and applicable laws.
