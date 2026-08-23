@@ -18,17 +18,16 @@ export default function LocalVideoPlayer({
   onClose,
 }: LocalVideoPlayerProps) {
   const videoRef =
-    useRef<HTMLVideoElement | null>(
-      null
-    );
+    useRef<HTMLVideoElement | null>(null);
 
-  const [
-    videoUrl,
-    setVideoUrl,
-  ] = useState("");
+  const [videoUrl, setVideoUrl] =
+    useState("");
 
   const [error, setError] =
     useState("");
+
+  const [loading, setLoading] =
+    useState(true);
 
   const [isPlaying, setIsPlaying] =
     useState(false);
@@ -40,7 +39,7 @@ export default function LocalVideoPlayer({
     useState(0);
 
   /* -------------------------------------------------------- */
-  /* CREATE LOCAL OBJECT URL */
+  /* CREATE VIDEO URL */
   /* -------------------------------------------------------- */
 
   useEffect(() => {
@@ -49,6 +48,10 @@ export default function LocalVideoPlayer({
     }
 
     setError("");
+    setLoading(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
 
     const url =
       URL.createObjectURL(file);
@@ -56,17 +59,69 @@ export default function LocalVideoPlayer({
     setVideoUrl(url);
 
     return () => {
-      URL.revokeObjectURL(
-        url
-      );
+      URL.revokeObjectURL(url);
     };
   }, [file]);
 
   /* -------------------------------------------------------- */
-  /* PLAY / PAUSE */
+  /* LOAD VIDEO */
   /* -------------------------------------------------------- */
 
-  function togglePlay() {
+  useEffect(() => {
+    const video =
+      videoRef.current;
+
+    if (!video || !videoUrl) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    video.load();
+
+    return () => {
+      video.pause();
+    };
+  }, [videoUrl]);
+
+  /* -------------------------------------------------------- */
+  /* PLAY */
+  /* -------------------------------------------------------- */
+
+  async function playVideo() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    try {
+      setError("");
+
+      await video.play();
+
+      setIsPlaying(true);
+    } catch (err) {
+      console.error(
+        "Video playback failed:",
+        err
+      );
+
+      setError(
+        "The browser could not play this video. MP4/H.264 videos are recommended."
+      );
+
+      setIsPlaying(false);
+    }
+  }
+
+  /* -------------------------------------------------------- */
+  /* PAUSE / PLAY */
+  /* -------------------------------------------------------- */
+
+  async function togglePlay() {
     const video =
       videoRef.current;
 
@@ -75,14 +130,39 @@ export default function LocalVideoPlayer({
     }
 
     if (video.paused) {
-      video.play().catch(() => {
-        setError(
-          "Unable to play this video."
-        );
-      });
+      await playVideo();
     } else {
       video.pause();
     }
+  }
+
+  /* -------------------------------------------------------- */
+  /* VIDEO READY */
+  /* -------------------------------------------------------- */
+
+  function handleLoadedMetadata() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    setLoading(false);
+
+    if (
+      Number.isFinite(
+        video.duration
+      )
+    ) {
+      setDuration(
+        video.duration
+      );
+    }
+  }
+
+  function handleCanPlay() {
+    setLoading(false);
   }
 
   /* -------------------------------------------------------- */
@@ -99,23 +179,6 @@ export default function LocalVideoPlayer({
 
     setCurrentTime(
       video.currentTime
-    );
-  }
-
-  function handleLoadedMetadata() {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    setDuration(
-      Number.isFinite(
-        video.duration
-      )
-        ? video.duration
-        : 0
     );
   }
 
@@ -136,11 +199,43 @@ export default function LocalVideoPlayer({
     const value =
       Number(event.target.value);
 
-    video.currentTime =
-      value;
+    video.currentTime = value;
 
-    setCurrentTime(
-      value
+    setCurrentTime(value);
+  }
+
+  /* -------------------------------------------------------- */
+  /* VIDEO ERROR */
+  /* -------------------------------------------------------- */
+
+  function handleVideoError() {
+    setLoading(false);
+    setIsPlaying(false);
+
+    const video =
+      videoRef.current;
+
+    const mediaError =
+      video?.error;
+
+    console.error(
+      "Local video error:",
+      mediaError
+    );
+
+    if (
+      mediaError?.code ===
+      MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+    ) {
+      setError(
+        `This browser cannot play "${file.name}". MP4 videos encoded with H.264/AAC are the safest format for Android and web browsers.`
+      );
+
+      return;
+    }
+
+    setError(
+      "Unable to play this video."
     );
   }
 
@@ -152,17 +247,14 @@ export default function LocalVideoPlayer({
     seconds: number
   ) {
     if (
-      !Number.isFinite(
-        seconds
-      )
+      !Number.isFinite(seconds) ||
+      seconds < 0
     ) {
       return "0:00";
     }
 
     const total =
-      Math.floor(
-        seconds
-      );
+      Math.floor(seconds);
 
     const hours =
       Math.floor(
@@ -171,8 +263,7 @@ export default function LocalVideoPlayer({
 
     const minutes =
       Math.floor(
-        (total % 3600) /
-          60
+        (total % 3600) / 60
       );
 
     const secs =
@@ -224,20 +315,25 @@ export default function LocalVideoPlayer({
         video.requestFullscreen
       ) {
         await video.requestFullscreen();
+        return;
       }
-    } catch {
-      // Fullscreen is optional.
+
+      const webkitVideo =
+        video as HTMLVideoElement & {
+          webkitEnterFullscreen?: () => void;
+        };
+
+      if (
+        webkitVideo.webkitEnterFullscreen
+      ) {
+        webkitVideo.webkitEnterFullscreen();
+      }
+    } catch (err) {
+      console.warn(
+        "Fullscreen failed:",
+        err
+      );
     }
-  }
-
-  /* -------------------------------------------------------- */
-  /* VIDEO ERROR */
-  /* -------------------------------------------------------- */
-
-  function handleVideoError() {
-    setError(
-      "This video format may not be supported by your browser."
-    );
   }
 
   /* -------------------------------------------------------- */
@@ -248,6 +344,7 @@ export default function LocalVideoPlayer({
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
 
       {/* HEADER */}
+
       <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-[#0d1118] px-4 py-3">
 
         <div className="min-w-0">
@@ -255,7 +352,7 @@ export default function LocalVideoPlayer({
             {title}
           </h2>
 
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 truncate text-xs text-gray-500">
             Playing from your device
           </p>
         </div>
@@ -276,7 +373,6 @@ export default function LocalVideoPlayer({
               rounded-xl
               bg-white/5
               text-gray-300
-              hover:bg-white/10
             "
             aria-label="Close player"
           >
@@ -296,6 +392,7 @@ export default function LocalVideoPlayer({
       </div>
 
       {/* PLAYER */}
+
       <div className="relative bg-black">
 
         {videoUrl && (
@@ -304,17 +401,20 @@ export default function LocalVideoPlayer({
             src={videoUrl}
             controls
             playsInline
-            preload="metadata"
-            className="block max-h-[75vh] min-h-[240px] w-full bg-black object-contain"
+            preload="auto"
+            className="
+              block
+              min-h-[240px]
+              max-h-[75vh]
+              w-full
+              bg-black
+              object-contain
+            "
             onPlay={() =>
-              setIsPlaying(
-                true
-              )
+              setIsPlaying(true)
             }
             onPause={() =>
-              setIsPlaying(
-                false
-              )
+              setIsPlaying(false)
             }
             onTimeUpdate={
               handleTimeUpdate
@@ -322,27 +422,53 @@ export default function LocalVideoPlayer({
             onLoadedMetadata={
               handleLoadedMetadata
             }
+            onCanPlay={
+              handleCanPlay
+            }
             onError={
               handleVideoError
             }
           />
         )}
 
+        {/* LOADING */}
+
+        {loading && !error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+
+            <div className="text-center">
+
+              <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-green-400" />
+
+              <p className="mt-3 text-sm text-gray-400">
+                Loading video...
+              </p>
+
+            </div>
+
+          </div>
+        )}
+
         {/* ERROR */}
+
         {error && (
-          <div className="absolute inset-x-0 bottom-0 bg-red-950/90 p-4 text-center">
+          <div className="absolute inset-x-0 bottom-0 bg-red-950/95 p-4 text-center">
+
             <p className="text-sm font-semibold text-red-300">
               {error}
             </p>
+
           </div>
         )}
 
       </div>
 
-      {/* EXTRA CONTROLS */}
+      {/* CONTROLS */}
+
       <div className="bg-[#0d1118] p-4">
 
         {/* PROGRESS */}
+
         {duration > 0 && (
           <input
             type="range"
@@ -350,23 +476,19 @@ export default function LocalVideoPlayer({
             max={duration}
             step="0.1"
             value={currentTime}
-            onChange={
-              handleSeek
-            }
+            onChange={handleSeek}
             className="w-full accent-green-500"
             aria-label="Video progress"
           />
         )}
 
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
 
           <div className="flex items-center gap-3">
 
             <button
               type="button"
-              onClick={
-                togglePlay
-              }
+              onClick={togglePlay}
               className="
                 tv-focus
                 tv-nav-item
@@ -376,7 +498,7 @@ export default function LocalVideoPlayer({
                 justify-center
                 rounded-xl
                 bg-green-500
-                px-4
+                px-5
                 font-bold
                 text-black
               "
@@ -400,9 +522,7 @@ export default function LocalVideoPlayer({
 
           <button
             type="button"
-            onClick={
-              enterFullscreen
-            }
+            onClick={enterFullscreen}
             className="
               tv-focus
               tv-nav-item
@@ -424,7 +544,9 @@ export default function LocalVideoPlayer({
           </button>
 
         </div>
+
       </div>
+
     </div>
   );
 }

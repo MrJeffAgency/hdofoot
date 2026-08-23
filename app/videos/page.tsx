@@ -1,1013 +1,665 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import LocalVideoPlayer from "@/components/LocalVideoPlayer";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
-interface LocalVideo {
-  id: string;
-  name: string;
+interface LocalVideoPlayerProps {
   file: File;
-  size: number;
-  modified: number;
+  title: string;
+  onClose?: () => void;
 }
 
-const VIDEO_EXTENSIONS = [
-  ".mp4",
-  ".webm",
-  ".mov",
-  ".m4v",
-  ".ogg",
-  ".ogv",
-  ".avi",
-  ".mkv",
-];
+export default function LocalVideoPlayer({
+  file,
+  title,
+  onClose,
+}: LocalVideoPlayerProps) {
+  const videoRef =
+    useRef<HTMLVideoElement | null>(null);
 
-const DB_NAME = "hdofoot-local-videos";
-const DB_STORE = "settings";
-const DIRECTORY_KEY = "videos-directory";
-
-function isVideoFile(file: File) {
-  const name = file.name.toLowerCase();
-
-  if (
-    file.type.startsWith("video/")
-  ) {
-    return true;
-  }
-
-  return VIDEO_EXTENSIONS.some(
-    (extension) =>
-      name.endsWith(extension)
-  );
-}
-
-function createVideoId(
-  file: File,
-  index: number
-) {
-  return [
-    file.name,
-    file.size,
-    file.lastModified,
-    index,
-  ].join("-");
-}
-
-/* ---------------------------------------------------------- */
-/* INDEXED DB */
-/* ---------------------------------------------------------- */
-
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise(
-    (resolve, reject) => {
-      const request =
-        indexedDB.open(
-          DB_NAME,
-          1
-        );
-
-      request.onupgradeneeded =
-        () => {
-          const db =
-            request.result;
-
-          if (
-            !db.objectStoreNames.contains(
-              DB_STORE
-            )
-          ) {
-            db.createObjectStore(
-              DB_STORE
-            );
-          }
-        };
-
-      request.onsuccess =
-        () => {
-          resolve(
-            request.result
-          );
-        };
-
-      request.onerror =
-        () => {
-          reject(
-            request.error
-          );
-        };
-    }
-  );
-}
-
-async function saveDirectoryHandle(
-  handle: any
-) {
-  try {
-    const db =
-      await openDatabase();
-
-    return new Promise<void>(
-      (resolve, reject) => {
-        const transaction =
-          db.transaction(
-            DB_STORE,
-            "readwrite"
-          );
-
-        transaction.objectStore(
-          DB_STORE
-        ).put(
-          handle,
-          DIRECTORY_KEY
-        );
-
-        transaction.oncomplete =
-          () => {
-            db.close();
-            resolve();
-          };
-
-        transaction.onerror =
-          () => {
-            db.close();
-            reject(
-              transaction.error
-            );
-          };
-      }
-    );
-  } catch {
-    // Persistent storage is optional.
-  }
-}
-
-async function getDirectoryHandle() {
-  try {
-    const db =
-      await openDatabase();
-
-    return new Promise<any>(
-      (resolve, reject) => {
-        const transaction =
-          db.transaction(
-            DB_STORE,
-            "readonly"
-          );
-
-        const request =
-          transaction
-            .objectStore(
-              DB_STORE
-            )
-            .get(
-              DIRECTORY_KEY
-            );
-
-        request.onsuccess =
-          () => {
-            db.close();
-            resolve(
-              request.result ||
-                null
-            );
-          };
-
-        request.onerror =
-          () => {
-            db.close();
-            reject(
-              request.error
-            );
-          };
-      }
-    );
-  } catch {
-    return null;
-  }
-}
-
-/* ---------------------------------------------------------- */
-/* READ DIRECTORY */
-/* ---------------------------------------------------------- */
-
-async function readDirectory(
-  directoryHandle: any
-): Promise<File[]> {
-  const files: File[] = [];
-
-  async function walk(
-    handle: any
-  ) {
-    for await (
-      const entry of handle.values()
-    ) {
-      if (
-        entry.kind === "file"
-      ) {
-        try {
-          const file =
-            await entry.getFile();
-
-          if (
-            isVideoFile(file)
-          ) {
-            files.push(file);
-          }
-        } catch {
-          // Ignore inaccessible files.
-        }
-      }
-
-      /*
-       * Include subfolders too.
-       */
-      if (
-        entry.kind ===
-        "directory"
-      ) {
-        try {
-          await walk(entry);
-        } catch {
-          // Ignore inaccessible folders.
-        }
-      }
-    }
-  }
-
-  await walk(
-    directoryHandle
-  );
-
-  return files;
-}
-
-/* ---------------------------------------------------------- */
-/* MAIN PAGE */
-/* ---------------------------------------------------------- */
-
-export default function VideosPage() {
-  const [videos, setVideos] =
-    useState<LocalVideo[]>([]);
-
-  const [selectedVideo, setSelectedVideo] =
-    useState<LocalVideo | null>(
-      null
-    );
-
-  const [directoryHandle, setDirectoryHandle] =
-    useState<any>(null);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [initializing, setInitializing] =
-    useState(true);
+  const [videoUrl, setVideoUrl] =
+    useState<string>("");
 
   const [error, setError] =
-    useState("");
+    useState<string>("");
 
-  const [
-    permissionGranted,
-    setPermissionGranted,
-  ] = useState(false);
+  const [isPlaying, setIsPlaying] =
+    useState(false);
 
-  /* -------------------------------------------------------- */
-  /* LOAD VIDEOS */
-  /* -------------------------------------------------------- */
+  const [currentTime, setCurrentTime] =
+    useState(0);
 
-  const loadVideos = useCallback(
-    async (
-      handle: any
-    ) => {
-      if (!handle) {
-        return;
-      }
+  const [duration, setDuration] =
+    useState(0);
 
-      setLoading(true);
-      setError("");
+  const [volume, setVolume] =
+    useState(1);
 
-      try {
-        const permission =
-          await handle.queryPermission({
-            mode: "read",
-          });
+  const [muted, setMuted] =
+    useState(false);
 
-        if (
-          permission !==
-          "granted"
-        ) {
-          setPermissionGranted(
-            false
-          );
-
-          setVideos([]);
-
-          return;
-        }
-
-        setPermissionGranted(
-          true
-        );
-
-        const files =
-          await readDirectory(
-            handle
-          );
-
-        const localVideos =
-          files
-            .sort(
-              (
-                a,
-                b
-              ) =>
-                b.lastModified -
-                a.lastModified
-            )
-            .map(
-              (
-                file,
-                index
-              ) => ({
-                id:
-                  createVideoId(
-                    file,
-                    index
-                  ),
-                name:
-                  file.name,
-                file,
-                size:
-                  file.size,
-                modified:
-                  file.lastModified,
-              })
-            );
-
-        setVideos(
-          localVideos
-        );
-
-      } catch (err) {
-        console.error(
-          "Unable to read video folder:",
-          err
-        );
-
-        setError(
-          "Unable to read your video folder."
-        );
-
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+  const [ready, setReady] =
+    useState(false);
 
   /* -------------------------------------------------------- */
-  /* RESTORE SAVED FOLDER */
+  /* CREATE OBJECT URL */
   /* -------------------------------------------------------- */
 
   useEffect(() => {
-    let cancelled =
-      false;
-
-    async function restore() {
-      try {
-        if (
-          !("showDirectoryPicker" in window)
-        ) {
-          return;
-        }
-
-        const handle =
-          await getDirectoryHandle();
-
-        if (
-          !handle ||
-          cancelled
-        ) {
-          return;
-        }
-
-        setDirectoryHandle(
-          handle
-        );
-
-        await loadVideos(
-          handle
-        );
-
-      } catch (err) {
-        console.warn(
-          "Saved video folder could not be restored:",
-          err
-        );
-      } finally {
-        if (!cancelled) {
-          setInitializing(
-            false
-          );
-        }
-      }
-    }
-
-    restore();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loadVideos]);
-
-  /* -------------------------------------------------------- */
-  /* CHOOSE VIDEO FOLDER */
-  /* -------------------------------------------------------- */
-
-  async function chooseVideoFolder() {
-    setError("");
-
-    try {
-      if (
-        !(
-          "showDirectoryPicker" in
-          window
-        )
-      ) {
-        setError(
-          "Your browser does not support folder access. Use the Select Videos button instead."
-        );
-
-        return;
-      }
-
-      const picker =
-        (
-          window as any
-        ).showDirectoryPicker;
-
-      const handle =
-        await picker({
-          mode: "read",
-        });
-
-      /*
-       * Request explicit permission.
-       */
-      const permission =
-        await handle.requestPermission({
-          mode: "read",
-        });
-
-      if (
-        permission !==
-        "granted"
-      ) {
-        setPermissionGranted(
-          false
-        );
-
-        setError(
-          "HDOFOOT needs permission to read your video folder."
-        );
-
-        return;
-      }
-
-      setDirectoryHandle(
-        handle
-      );
-
-      setPermissionGranted(
-        true
-      );
-
-      await saveDirectoryHandle(
-        handle
-      );
-
-      await loadVideos(
-        handle
-      );
-
-    } catch (err) {
-      console.error(
-        "Video folder selection failed:",
-        err
-      );
-
-      if (
-        err instanceof Error &&
-        err.name ===
-          "AbortError"
-      ) {
-        return;
-      }
-
-      setError(
-        "Unable to access your video folder."
-      );
-    }
-  }
-
-  /* -------------------------------------------------------- */
-  /* FALLBACK FILE PICKER */
-/* -------------------------------------------------------- */
-
-  function selectVideoFiles(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const files =
-      event.target.files;
-
-    if (!files) {
+    if (!file) {
       return;
     }
 
-    const localVideos =
-      Array.from(files)
-        .filter(
-          isVideoFile
-        )
-        .map(
-          (
-            file,
-            index
-          ) => ({
-            id:
-              createVideoId(
-                file,
-                index
-              ),
-            name:
-              file.name,
-            file,
-            size:
-              file.size,
-            modified:
-              file.lastModified,
-          })
-        );
+    setError("");
+    setReady(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
 
-    setVideos(
-      localVideos
+    const url =
+      URL.createObjectURL(file);
+
+    setVideoUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
+
+  /* -------------------------------------------------------- */
+  /* CLEAN VIDEO WHEN URL CHANGES */
+  /* -------------------------------------------------------- */
+
+  useEffect(() => {
+    const video =
+      videoRef.current;
+
+    if (!video || !videoUrl) {
+      return;
+    }
+
+    video.load();
+
+    return () => {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    };
+  }, [videoUrl]);
+
+  /* -------------------------------------------------------- */
+  /* PLAY / PAUSE */
+  /* -------------------------------------------------------- */
+
+  async function togglePlay() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    try {
+      if (video.paused) {
+        await video.play();
+      } else {
+        video.pause();
+      }
+    } catch (err) {
+      console.error(
+        "Video play error:",
+        err
+      );
+
+      setError(
+        "The browser could not play this video. The file may use a codec that Android/browser does not support."
+      );
+    }
+  }
+
+  /* -------------------------------------------------------- */
+  /* VIDEO EVENTS */
+  /* -------------------------------------------------------- */
+
+  function handlePlay() {
+    setIsPlaying(true);
+  }
+
+  function handlePause() {
+    setIsPlaying(false);
+  }
+
+  function handleTimeUpdate() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    setCurrentTime(
+      video.currentTime
     );
+  }
 
-    setPermissionGranted(
-      true
-    );
+  function handleLoadedMetadata() {
+    const video =
+      videoRef.current;
 
+    if (!video) {
+      return;
+    }
+
+    if (
+      Number.isFinite(
+        video.duration
+      )
+    ) {
+      setDuration(
+        video.duration
+      );
+    }
+  }
+
+  function handleCanPlay() {
+    setReady(true);
     setError("");
   }
 
-  /* -------------------------------------------------------- */
-  /* FORMAT SIZE */
-/* -------------------------------------------------------- */
-
-  const totalSize =
-    useMemo(() => {
-      const bytes =
-        videos.reduce(
-          (
-            total,
-            video
-          ) =>
-            total +
-            video.size,
-          0
-        );
-
-      if (
-        bytes <
-        1024 * 1024
-      ) {
-        return `${(
-          bytes / 1024
-        ).toFixed(1)} KB`;
-      }
-
-      if (
-        bytes <
-        1024 * 1024 * 1024
-      ) {
-        return `${(
-          bytes /
-          (1024 * 1024)
-        ).toFixed(1)} GB`;
-      }
-
-      return `${(
-        bytes /
-        (1024 *
-          1024 *
-          1024)
-      ).toFixed(2)} GB`;
-    }, [videos]);
+  function handleEnded() {
+    setIsPlaying(false);
+  }
 
   /* -------------------------------------------------------- */
-  /* INITIAL LOADING */
-/* -------------------------------------------------------- */
+  /* VIDEO ERROR */
+  /* -------------------------------------------------------- */
 
-  if (initializing) {
-    return (
-      <main className="min-h-screen bg-[#07090d] px-4 py-8 text-white">
-        <div className="mx-auto max-w-[1600px]">
-          <div className="rounded-2xl border border-white/10 bg-[#0d1118] p-10 text-center">
-            <p className="text-sm text-gray-400">
-              Loading your videos...
-            </p>
-          </div>
-        </div>
-      </main>
+  function handleVideoError() {
+    const video =
+      videoRef.current;
+
+    console.error(
+      "Local video playback error:",
+      video?.error
+    );
+
+    setReady(false);
+
+    setError(
+      "This video cannot be played by your browser. MP4 videos using H.264 video and AAC audio are the most compatible."
     );
   }
 
   /* -------------------------------------------------------- */
-  /* PAGE */
-/* -------------------------------------------------------- */
+  /* SEEK */
+  /* -------------------------------------------------------- */
+
+  function handleSeek(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    const value =
+      Number(event.target.value);
+
+    video.currentTime =
+      value;
+
+    setCurrentTime(
+      value
+    );
+  }
+
+  /* -------------------------------------------------------- */
+  /* VOLUME */
+  /* -------------------------------------------------------- */
+
+  function handleVolume(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    const value =
+      Number(event.target.value);
+
+    video.volume =
+      value;
+
+    setVolume(value);
+
+    if (value > 0) {
+      video.muted = false;
+      setMuted(false);
+    }
+  }
+
+  function toggleMute() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    video.muted =
+      !video.muted;
+
+    setMuted(
+      video.muted
+    );
+  }
+
+  /* -------------------------------------------------------- */
+  /* SKIP */
+  /* -------------------------------------------------------- */
+
+  function skip(seconds: number) {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    const next =
+      Math.min(
+        Math.max(
+          video.currentTime +
+            seconds,
+          0
+        ),
+        video.duration || Infinity
+      );
+
+    video.currentTime =
+      next;
+
+    setCurrentTime(
+      next
+    );
+  }
+
+  /* -------------------------------------------------------- */
+  /* FULLSCREEN */
+  /* -------------------------------------------------------- */
+
+  async function enterFullscreen() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    try {
+      if (
+        document.fullscreenElement
+      ) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      if (
+        video.requestFullscreen
+      ) {
+        await video.requestFullscreen();
+      }
+    } catch (err) {
+      console.warn(
+        "Fullscreen unavailable:",
+        err
+      );
+    }
+  }
+
+  /* -------------------------------------------------------- */
+  /* FORMAT TIME */
+  /* -------------------------------------------------------- */
+
+  function formatTime(
+    seconds: number
+  ) {
+    if (
+      !Number.isFinite(
+        seconds
+      ) ||
+      seconds < 0
+    ) {
+      return "0:00";
+    }
+
+    const total =
+      Math.floor(seconds);
+
+    const hours =
+      Math.floor(
+        total / 3600
+      );
+
+    const minutes =
+      Math.floor(
+        (total % 3600) /
+          60
+      );
+
+    const secs =
+      total % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(
+        minutes
+      ).padStart(
+        2,
+        "0"
+      )}:${String(
+        secs
+      ).padStart(
+        2,
+        "0"
+      )}`;
+    }
+
+    return `${minutes}:${String(
+      secs
+    ).padStart(
+      2,
+      "0"
+    )}`;
+  }
+
+  /* -------------------------------------------------------- */
+  /* RENDER */
+  /* -------------------------------------------------------- */
 
   return (
-    <main className="min-h-screen w-full bg-[#07090d] text-white">
-      <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-5 md:px-6 lg:px-8">
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
 
-        {/* HEADER */}
-        <header className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-widest text-green-400">
-            HDOFOOT
+      {/* HEADER */}
+      <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-[#0d1118] px-4 py-3">
+
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-bold text-white">
+            {title}
+          </h2>
+
+          <p className="mt-1 truncate text-xs text-gray-500">
+            {file.name}
           </p>
+        </div>
 
-          <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-            My Videos
-          </h1>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="
+              tv-focus
+              tv-nav-item
+              flex
+              h-10
+              w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              bg-white/5
+              text-gray-300
+            "
+            aria-label="Close player"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-5 w-5"
+            >
+              <path d="M6 6l12 12" />
+              <path d="M18 6 6 18" />
+            </svg>
+          </button>
+        )}
 
-          <p className="mt-2 max-w-2xl text-sm text-gray-500">
-            Watch videos stored on your phone directly in HDOFOOT.
-            Your videos stay on your device.
-          </p>
-        </header>
+      </div>
 
-        {/* PERMISSION CARD */}
-        {!permissionGranted &&
-          videos.length === 0 && (
-            <section className="mb-8 rounded-2xl border border-green-500/20 bg-[#0d1118] p-6 sm:p-8">
+      {/* PLAYER */}
+      <div className="relative aspect-video w-full bg-black">
 
-              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        {!videoUrl && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-green-500/20 border-t-green-400" />
 
-                <div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10 text-green-400">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="h-6 w-6"
-                      >
-                        <path d="M3 7h6l2 2h10v10H3z" />
-                        <path d="M3 7V5h6l2 2" />
-                      </svg>
-                    </div>
+              <p className="mt-3 text-sm text-gray-500">
+                Loading video...
+              </p>
+            </div>
+          </div>
+        )}
 
-                    <div>
-                      <h2 className="text-lg font-bold">
-                        Give HDOFOOT video access
-                      </h2>
-
-                      <p className="mt-1 text-sm text-gray-500">
-                        Select your Videos folder to load your videos.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-
-                  <button
-                    type="button"
-                    onClick={
-                      chooseVideoFolder
-                    }
-                    className="
-                      tv-focus
-                      tv-nav-item
-                      inline-flex
-                      min-h-[48px]
-                      items-center
-                      justify-center
-                      rounded-xl
-                      bg-green-500
-                      px-6
-                      font-bold
-                      text-black
-                      transition
-                      hover:bg-green-400
-                    "
-                  >
-                    Allow Video Access
-                  </button>
-
-                  <label
-                    className="
-                      tv-focus
-                      tv-nav-item
-                      inline-flex
-                      min-h-[48px]
-                      cursor-pointer
-                      items-center
-                      justify-center
-                      rounded-xl
-                      border
-                      border-white/10
-                      bg-[#121821]
-                      px-6
-                      font-semibold
-                      text-white
-                      transition
-                      hover:border-green-500/30
-                    "
-                  >
-                    Select Videos
-
-                    <input
-                      type="file"
-                      accept="video/*,.mkv,.avi,.mov,.m4v,.mp4,.webm"
-                      multiple
-                      className="hidden"
-                      onChange={
-                        selectVideoFiles
-                      }
-                    />
-                  </label>
-
-                </div>
-              </div>
-            </section>
-          )}
-
-        {/* ERROR */}
-        {error && (
-          <section className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/5 p-5">
-            <p className="font-semibold text-red-400">
-              {error}
-            </p>
-          </section>
+        {videoUrl && (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            playsInline
+            preload="auto"
+            controls
+            controlsList="nodownload"
+            className="h-full w-full bg-black object-contain"
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={
+              handleLoadedMetadata
+            }
+            onCanPlay={handleCanPlay}
+            onEnded={handleEnded}
+            onError={handleVideoError}
+          />
         )}
 
         {/* LOADING */}
-        {loading && (
-          <section className="mb-6 rounded-2xl border border-white/10 bg-[#0d1118] p-8 text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-green-500/20 border-t-green-400" />
+        {videoUrl && !ready && !error && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
+            <div className="rounded-xl bg-black/70 px-5 py-3 text-center">
+              <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-green-400" />
 
-            <p className="mt-4 text-sm text-gray-500">
-              Loading your videos...
-            </p>
-          </section>
-        )}
-
-        {/* LIBRARY HEADER */}
-        {!loading &&
-          videos.length > 0 && (
-            <section className="mb-6">
-
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-
-                <div>
-                  <h2 className="text-2xl font-black">
-                    Video Library
-                  </h2>
-
-                  <p className="mt-1 text-xs text-gray-500">
-                    {videos.length}{" "}
-                    {videos.length === 1
-                      ? "video"
-                      : "videos"}
-                    {" • "}
-                    {totalSize}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-
-                  {directoryHandle && (
-                    <button
-                      type="button"
-                      onClick={
-                        chooseVideoFolder
-                      }
-                      className="
-                        tv-focus
-                        tv-nav-item
-                        min-h-[44px]
-                        rounded-xl
-                        border
-                        border-white/10
-                        bg-[#0d1118]
-                        px-4
-                        text-sm
-                        font-semibold
-                        text-gray-300
-                      "
-                    >
-                      Change Folder
-                    </button>
-                  )}
-
-                  <label
-                    className="
-                      tv-focus
-                      tv-nav-item
-                      inline-flex
-                      min-h-[44px]
-                      cursor-pointer
-                      items-center
-                      rounded-xl
-                      bg-green-500
-                      px-4
-                      text-sm
-                      font-bold
-                      text-black
-                    "
-                  >
-                    Add Videos
-
-                    <input
-                      type="file"
-                      accept="video/*,.mkv,.avi,.mov,.m4v,.mp4,.webm"
-                      multiple
-                      className="hidden"
-                      onChange={
-                        selectVideoFiles
-                      }
-                    />
-                  </label>
-
-                </div>
-              </div>
-            </section>
-          )}
-
-        {/* EMPTY */}
-        {!loading &&
-          videos.length === 0 &&
-          permissionGranted && (
-            <section className="rounded-2xl border border-white/10 bg-[#0d1118] p-10 text-center">
-
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-7 w-7 text-green-400"
-                >
-                  <path d="M4 5h16v14H4z" />
-                  <path d="m10 9 5 3-5 3z" />
-                </svg>
-              </div>
-
-              <h2 className="mt-5 text-xl font-bold">
-                No videos found
-              </h2>
-
-              <p className="mx-auto mt-2 max-w-md text-sm text-gray-500">
-                No supported video files were found in the selected folder.
+              <p className="mt-2 text-xs text-gray-400">
+                Preparing video...
               </p>
-
-              <button
-                type="button"
-                onClick={
-                  chooseVideoFolder
-                }
-                className="
-                  tv-focus
-                  tv-nav-item
-                  mt-6
-                  min-h-[48px]
-                  rounded-xl
-                  bg-green-500
-                  px-6
-                  font-bold
-                  text-black
-                "
-              >
-                Choose Another Folder
-              </button>
-            </section>
-          )}
-
-        {/* VIDEO PLAYER */}
-        {selectedVideo && (
-          <section className="mb-8">
-            <LocalVideoPlayer
-              file={
-                selectedVideo.file
-              }
-              title={
-                selectedVideo.name
-              }
-              onClose={() =>
-                setSelectedVideo(
-                  null
-                )
-              }
-            />
-          </section>
+            </div>
+          </div>
         )}
 
-        {/* VIDEO GRID */}
-        {!loading &&
-          videos.length > 0 && (
-            <section
-              className="
-                grid
-                w-full
-                grid-cols-2
-                gap-4
-                sm:grid-cols-3
-                md:grid-cols-4
-                lg:grid-cols-5
-                xl:grid-cols-6
-                2xl:grid-cols-7
-              "
-            >
-              {videos.map(
-                (video) => (
-                  <button
-                    type="button"
-                    key={
-                      video.id
-                    }
-                    onClick={() =>
-                      setSelectedVideo(
-                        video
-                      )
-                    }
-                    className="
-                      tv-focus
-                      tv-nav-item
-                      group
-                      overflow-hidden
-                      rounded-2xl
-                      border
-                      border-white/10
-                      bg-[#0d1118]
-                      text-left
-                      transition
-                      hover:border-green-500/30
-                      hover:bg-[#10161f]
-                    "
-                  >
-
-                    {/* VIDEO PREVIEW */}
-                    <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#080b10]">
-
-                      <div className="absolute inset-0 flex items-center justify-center">
-
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10 transition group-hover:scale-110 group-hover:bg-green-500/20">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className="ml-1 h-7 w-7 text-green-400"
-                          >
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </div>
-
-                      </div>
-
-                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
-
-                    </div>
-
-                    {/* INFO */}
-                    <div className="p-3">
-
-                      <h3 className="truncate text-sm font-bold text-white">
-                        {
-                          video.name
-                        }
-                      </h3>
-
-                      <p className="mt-1 text-xs text-gray-500">
-                        {(
-                          video.size /
-                          (1024 *
-                            1024)
-                        ).toFixed(
-                          1
-                        )}{" "}
-                        MB
-                      </p>
-
-                    </div>
-
-                  </button>
-                )
-              )}
-            </section>
-          )}
+        {/* ERROR */}
+        {error && (
+          <div className="absolute inset-x-0 bottom-0 bg-red-950/95 p-4">
+            <p className="text-center text-sm font-semibold text-red-300">
+              {error}
+            </p>
+          </div>
+        )}
 
       </div>
-    </main>
+
+      {/* CONTROLS */}
+      <div className="bg-[#0d1118] p-4">
+
+        {/* PROGRESS */}
+        {duration > 0 && (
+          <input
+            type="range"
+            min="0"
+            max={duration}
+            step="0.1"
+            value={currentTime}
+            onChange={
+              handleSeek
+            }
+            className="w-full accent-green-500"
+            aria-label="Video progress"
+          />
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+
+          {/* PLAY */}
+          <button
+            type="button"
+            onClick={togglePlay}
+            className="
+              tv-focus
+              tv-nav-item
+              min-h-[44px]
+              rounded-xl
+              bg-green-500
+              px-5
+              font-bold
+              text-black
+            "
+          >
+            {isPlaying
+              ? "Pause"
+              : "Play"}
+          </button>
+
+          {/* BACK */}
+          <button
+            type="button"
+            onClick={() =>
+              skip(-10)
+            }
+            className="
+              tv-focus
+              tv-nav-item
+              min-h-[44px]
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              px-4
+              text-sm
+              font-semibold
+              text-white
+            "
+          >
+            −10s
+          </button>
+
+          {/* FORWARD */}
+          <button
+            type="button"
+            onClick={() =>
+              skip(10)
+            }
+            className="
+              tv-focus
+              tv-nav-item
+              min-h-[44px]
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              px-4
+              text-sm
+              font-semibold
+              text-white
+            "
+          >
+            +10s
+          </button>
+
+          {/* TIME */}
+          <span className="text-xs text-gray-500">
+            {formatTime(
+              currentTime
+            )}{" "}
+            /{" "}
+            {formatTime(
+              duration
+            )}
+          </span>
+
+          {/* MUTE */}
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="
+              tv-focus
+              tv-nav-item
+              ml-auto
+              min-h-[44px]
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              px-4
+              text-sm
+              font-semibold
+              text-gray-300
+            "
+          >
+            {muted
+              ? "Unmute"
+              : "Mute"}
+          </button>
+
+          {/* VOLUME */}
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={
+              muted
+                ? 0
+                : volume
+            }
+            onChange={
+              handleVolume
+            }
+            className="w-24 accent-green-500"
+            aria-label="Volume"
+          />
+
+          {/* FULLSCREEN */}
+          <button
+            type="button"
+            onClick={
+              enterFullscreen
+            }
+            className="
+              tv-focus
+              tv-nav-item
+              min-h-[44px]
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              px-4
+              text-sm
+              font-semibold
+              text-gray-300
+            "
+          >
+            Fullscreen
+          </button>
+
+        </div>
+      </div>
+
+    </div>
   );
 }
