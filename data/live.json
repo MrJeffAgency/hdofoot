@@ -21,12 +21,48 @@
     "stream": "https://9now-livestreams.akamaized.net/hls/live/2008312/go-syd/master.m3u8"
   },
   {
-    "id": "13-kids",
-    "name": "13 Kids",
-    "logo": "https://i.imgur.com/8WJUbSD.png",
+    "id": "TomAndJerry.us@HD",
+    "name": "TomAndJerry.us@HD",
+    "logo": "https://gia.tv/streams/pptv/208314.jpg?1750373428%22",
     "group": "Kids",
-    "stream": "https://origin.dpsgo.com/ssai/event/LhHrVtyeQkKZ-Ye_xEU75g/master.m3u8"
+    "stream": "https://live20.bozztv.com/giatvplayout7/giatv-208314/playlist.m3u8"
   },
+
+  {
+    "id": "BeIN",
+    "name": "Sports",
+    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
+    "group": "Sports",
+    "stream": "https://bein-esp-klowdtv.amagi.tv/playlist.m3u8"
+  },
+  {
+    "id": "WapTV",
+    "name": "WapTV",
+    "logo": "https://i.ibb.co/F4hzbRxt/waptv.png",
+    "group": "WapTV",
+    "stream": "https://newproxy3.vidivu.tv/waptv/index.m3u8"
+  },
+  
+  {
+    "id": "Music",
+    "name": "music",
+    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
+    "group": "music",
+    "stream": "https://stream.ecable.tv/afrobeats/index.m3u8"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+  
   {
     "id": "90s-kids",
     "name": "90's Kids",

@@ -46,3 +46,6 @@ yarn-error.log*
 next-env.d.ts
 .agents/
 .claude/
+
+# Telegram bot dependencies
+telegram-bot/node_modules/

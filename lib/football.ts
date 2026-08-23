@@ -220,10 +220,21 @@ async function fetchLeagueFixtures(
     url
   );
 
+  const controller =
+    new AbortController();
+
+  /*
+   * Prevent one blocked ESPN request
+   * from hanging the entire homepage.
+   */
+  const timeout =
+    setTimeout(() => {
+      controller.abort();
+    }, 5000);
+
   try {
-    const response = await fetch(
-      url,
-      {
+    const response =
+      await fetch(url, {
         method: "GET",
 
         headers: {
@@ -244,23 +255,34 @@ async function fetchLeagueFixtures(
         },
 
         cache: "no-store",
-      }
-    );
+
+        signal:
+          controller.signal,
+      });
 
     console.log(
       `ESPN ${league} HTTP:`,
       response.status
     );
 
+    /*
+     * ESPN frequently returns 403 for some
+     * soccer league endpoints.
+     *
+     * Treat 403 as an unavailable source,
+     * not as an application error.
+     */
     if (!response.ok) {
-      const text =
-        await response.text();
+      if (response.status !== 403) {
+        const text =
+          await response.text();
 
-      console.error(
-        `ESPN ${league} failed:`,
-        response.status,
-        text.slice(0, 300)
-      );
+        console.warn(
+          `ESPN ${league} failed:`,
+          response.status,
+          text.slice(0, 300)
+        );
+      }
 
       return [];
     }
@@ -294,13 +316,26 @@ async function fetchLeagueFixtures(
     );
 
     return fixtures;
+
   } catch (error) {
-    console.error(
-      `ESPN ${league} exception:`,
-      error
-    );
+    if (
+      error instanceof Error &&
+      error.name === "AbortError"
+    ) {
+      console.warn(
+        `ESPN ${league} timed out after 5 seconds`
+      );
+    } else {
+      console.warn(
+        `ESPN ${league} exception:`,
+        error
+      );
+    }
 
     return [];
+
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -322,7 +357,9 @@ function mapSportsDBStatus(event: any) {
     status.includes("cancelled")
   ) {
     return {
-      long: event?.strStatus || "Postponed",
+      long:
+        event?.strStatus ||
+        "Postponed",
       short: "PST",
       elapsed: null,
     };
@@ -357,7 +394,8 @@ function mapSportsDBStatus(event: any) {
     progress.includes("st") ||
     progress.includes("nd")
   ) {
-    let elapsed: number | null = null;
+    let elapsed: number | null =
+      null;
 
     const match =
       progress.match(/^(\d+)/);
@@ -367,7 +405,8 @@ function mapSportsDBStatus(event: any) {
     }
 
     return {
-      long: "Match in progress",
+      long:
+        "Match in progress",
       short: "LIVE",
       elapsed,
     };
@@ -399,7 +438,8 @@ function normalizeSportsDBEvent(
     event?.dateEvent || "";
 
   const time =
-    event?.strTime || "00:00:00";
+    event?.strTime ||
+    "00:00:00";
 
   const eventDate =
     date
@@ -410,24 +450,31 @@ function normalizeSportsDBEvent(
     event?.intHomeScore !== null &&
     event?.intHomeScore !== undefined &&
     event?.intHomeScore !== ""
-      ? Number(event.intHomeScore)
+      ? Number(
+          event.intHomeScore
+        )
       : null;
 
   const awayScore =
     event?.intAwayScore !== null &&
     event?.intAwayScore !== undefined &&
     event?.intAwayScore !== ""
-      ? Number(event.intAwayScore)
+      ? Number(
+          event.intAwayScore
+        )
       : null;
 
   return {
     fixture: {
       /*
-       * Prefix the ID so it cannot accidentally
-       * collide with an ESPN fixture ID.
+       * Prefix the ID so it cannot
+       * accidentally collide with
+       * an ESPN fixture ID.
        */
       id: Number(
-        `9${String(event.idEvent)}`
+        `9${String(
+          event.idEvent
+        )}`
       ),
 
       date: eventDate,
@@ -455,7 +502,8 @@ function normalizeSportsDBEvent(
     teams: {
       home: {
         id: Number(
-          event?.idHomeTeam || 0
+          event?.idHomeTeam ||
+          0
         ),
 
         name:
@@ -475,7 +523,8 @@ function normalizeSportsDBEvent(
 
       away: {
         id: Number(
-          event?.idAwayTeam || 0
+          event?.idAwayTeam ||
+          0
         ),
 
         name:
@@ -519,9 +568,8 @@ async function fetchSportsDBFixtures(
   );
 
   try {
-    const response = await fetch(
-      url,
-      {
+    const response =
+      await fetch(url, {
         method: "GET",
 
         headers: {
@@ -530,8 +578,7 @@ async function fetchSportsDBFixtures(
         },
 
         cache: "no-store",
-      }
-    );
+      });
 
     console.log(
       "TheSportsDB HTTP:",
@@ -542,7 +589,7 @@ async function fetchSportsDBFixtures(
       const text =
         await response.text();
 
-      console.error(
+      console.warn(
         "TheSportsDB failed:",
         response.status,
         text.slice(0, 300)
@@ -575,7 +622,9 @@ async function fetchSportsDBFixtures(
         )
         .map(
           (event: any) =>
-            normalizeSportsDBEvent(event)
+            normalizeSportsDBEvent(
+              event
+            )
         )
         .filter(Boolean);
 
@@ -585,8 +634,9 @@ async function fetchSportsDBFixtures(
     );
 
     return fixtures;
+
   } catch (error) {
-    console.error(
+    console.warn(
       "TheSportsDB exception:",
       error
     );
@@ -607,12 +657,13 @@ export async function getFixtures(
   /*
    * ESPN remains the PRIMARY source.
    *
-   * Keep requests sequential because many
-   * simultaneous ESPN requests can trigger
-   * rate limiting / 403 responses.
+   * Requests stay sequential to reduce
+   * rate limiting and 403 responses.
    */
 
-  for (const league of ESPN_LEAGUES) {
+  for (
+    const league of ESPN_LEAGUES
+  ) {
     const fixtures =
       await fetchLeagueFixtures(
         league,
@@ -625,16 +676,15 @@ export async function getFixtures(
   }
 
   /*
-   * TheSportsDB is a FALLBACK.
+   * TheSportsDB is the FALLBACK.
    *
-   * We only call it when ESPN returned
+   * It is used when ESPN returns
    * absolutely no fixtures.
-   *
-   * This prevents unnecessary API calls
-   * during normal operation.
    */
 
-  if (allFixtures.length === 0) {
+  if (
+    allFixtures.length === 0
+  ) {
     console.log(
       "ESPN returned 0 fixtures. Trying TheSportsDB fallback..."
     );
@@ -670,7 +720,10 @@ export async function getFixtures(
    */
 
   uniqueFixtures.sort(
-    (a: any, b: any) =>
+    (
+      a: any,
+      b: any
+    ) =>
       new Date(
         a.fixture.date
       ).getTime() -

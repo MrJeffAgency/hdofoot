@@ -12,10 +12,17 @@ function MovieSearchInput() {
   useEffect(() => {
     const value = query.trim();
 
+    // Don't search empty text
     if (!value) {
       if (pathname === "/movie/search") {
-        router.push("/movie");
+        router.replace("/movie");
       }
+      return;
+    }
+
+    // Already on the correct search URL.
+    // Don't push the same route repeatedly.
+    if (pathname === "/movie/search") {
       return;
     }
 
@@ -85,7 +92,7 @@ function MovieSearchInput() {
         />
 
         {/* Loading indicator */}
-        {query.trim() && (
+        {query.trim() && pathname !== "/movie/search" && (
           <span
             className="
               mr-4
