@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 import Header from "@/components/Header";
@@ -19,6 +20,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[#07090d] text-white antialiased">
+
+        {/* GOOGLE ADSENSE */}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9450563411919624"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
 
         <Header />
 
