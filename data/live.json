@@ -6,6 +6,8 @@
     "group": "Kids",
     "stream": "https://3abn.bozztv.com/3abn2/Kids_live/smil:Kids_live.smil/playlist.m3u8"
   },
+
+  
   {
     "id": "4fun-kids",
     "name": "4 Fun Kids",
@@ -13,13 +15,17 @@
     "group": "Kids",
     "stream": "https://stream.4fun.tv:8889/hls/4fk_high/index.m3u8"
   },
+
+  
   {
-    "id": "9go-sydney",
-    "name": "9Go!",
-    "logo": "https://i.imgur.com/RLijQI8.png",
-    "group": "Entertainment",
-    "stream": "https://9now-livestreams.akamaized.net/hls/live/2008312/go-syd/master.m3u8"
+    "id": "Wazobia",
+    "name": "hdofoot",
+    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
+    "group": "music",
+    "stream": "https://wazobia.live:8333/channel/wmaxph.m3u8"
   },
+
+  
   {
     "id": "TomAndJerry.us@HD",
     "name": "TomAndJerry.us@HD",
@@ -51,23 +57,40 @@
     "stream": "https://stream.ecable.tv/afrobeats/index.m3u8"
   },
 
-
-
-
-
-
-
-
-
-
+  {
+    "id": "pon",
+    "name": "boss",
+    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
+    "group": "Me",
+    "stream": "https://hls-cdn77.xvideos-cdn.com/pIcLgL-X-HPsrXktzHp5aw==,1787544208/a749e90e-b455-4bfe-81d7-988591ebd674/0/hls.m3u8"
+  },
 
 
   
+
+ {
+    "id": "Hdofoot",
+    "name": "hdofoot",
+    "logo": "https://i.imgur.com/2JO5Y8c.png",
+    "group": "hdofoot",
+    "stream": "https://vod.wwe.com/vod/2026/,1080,720,540,432,360,288,/lfg320_bubbaray_harlemlewis_promofordigital.m3u8"
+  },
+
+
+
   {
-    "id": "90s-kids",
-    "name": "90's Kids",
+    "id": "xxx",
+    "name": "pon",
     "logo": "https://images.pluto.tv/channels/6452c814939a590008567a3b/colorLogoPNG_1731836283044.png",
     "group": "Kids",
-    "stream": "https://jmp2.uk/plu-6452c814939a590008567a3b.m3u8"
+    "stream": "https://hls-cdn77.xvideos-cdn.com/Rv4RI1y8xufLoyF_WXMP5Q==,1787544901/479f8dec-73c3-423d-855c-6dc2b2605cdd/0/hls.m3u8"
+  },
+
+  {
+    "id": "x",
+    "name": "pon",
+    "logo": "https://images.pluto.tv/channels/6452c814939a590008567a3b/colorLogoPNG_1731836283044.png",
+    "group": "Kids",
+    "stream": "https://hls-cdn77.xvideos-cdn.com/mJK1f-kVLnjGf18euP1F6g==,1787544710/84e84dd3-3966-408d-80f7-abcba8b42db7/0/hls.m3u8"
   }
 ]
