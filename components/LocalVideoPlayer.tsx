@@ -7,14 +7,14 @@ import {
 } from "react";
 
 interface LocalVideoPlayerProps {
-  file: File;
-  title: string;
+  file?: File | null;
+  title?: string;
   onClose?: () => void;
 }
 
 export default function LocalVideoPlayer({
   file,
-  title,
+  title = "Local Video",
   onClose,
 }: LocalVideoPlayerProps) {
   const videoRef =
@@ -26,9 +26,6 @@ export default function LocalVideoPlayer({
   const [error, setError] =
     useState("");
 
-  const [loading, setLoading] =
-    useState(true);
-
   const [isPlaying, setIsPlaying] =
     useState(false);
 
@@ -38,17 +35,43 @@ export default function LocalVideoPlayer({
   const [duration, setDuration] =
     useState(0);
 
+  const [volume, setVolume] =
+    useState(1);
+
+  const [muted, setMuted] =
+    useState(false);
+
+  const [ready, setReady] =
+    useState(false);
+
+  /*
+   * Safe filename.
+   *
+   * IMPORTANT:
+   * Never use file.name directly unless
+   * we already know file exists.
+   */
+  const fileName =
+    file?.name || "Local video";
+
   /* -------------------------------------------------------- */
-  /* CREATE VIDEO URL */
+  /* CREATE OBJECT URL */
   /* -------------------------------------------------------- */
 
   useEffect(() => {
     if (!file) {
+      setVideoUrl("");
+      setError("No video file was selected.");
+      setReady(false);
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+
       return;
     }
 
     setError("");
-    setLoading(true);
+    setReady(false);
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -64,7 +87,7 @@ export default function LocalVideoPlayer({
   }, [file]);
 
   /* -------------------------------------------------------- */
-  /* LOAD VIDEO */
+  /* CLEAN VIDEO WHEN URL CHANGES */
   /* -------------------------------------------------------- */
 
   useEffect(() => {
@@ -75,50 +98,17 @@ export default function LocalVideoPlayer({
       return;
     }
 
-    setLoading(true);
-    setError("");
-
     video.load();
 
     return () => {
       video.pause();
+      video.removeAttribute("src");
+      video.load();
     };
   }, [videoUrl]);
 
   /* -------------------------------------------------------- */
-  /* PLAY */
-  /* -------------------------------------------------------- */
-
-  async function playVideo() {
-    const video =
-      videoRef.current;
-
-    if (!video) {
-      return;
-    }
-
-    try {
-      setError("");
-
-      await video.play();
-
-      setIsPlaying(true);
-    } catch (err) {
-      console.error(
-        "Video playback failed:",
-        err
-      );
-
-      setError(
-        "The browser could not play this video. MP4/H.264 videos are recommended."
-      );
-
-      setIsPlaying(false);
-    }
-  }
-
-  /* -------------------------------------------------------- */
-  /* PAUSE / PLAY */
+  /* PLAY / PAUSE */
   /* -------------------------------------------------------- */
 
   async function togglePlay() {
@@ -129,16 +119,52 @@ export default function LocalVideoPlayer({
       return;
     }
 
-    if (video.paused) {
-      await playVideo();
-    } else {
-      video.pause();
+    try {
+      setError("");
+
+      if (video.paused) {
+        await video.play();
+      } else {
+        video.pause();
+      }
+    } catch (err) {
+      console.error(
+        "Video play error:",
+        err
+      );
+
+      setError(
+        "The browser could not play this video. The file may use a codec that Android/browser does not support."
+      );
+
+      setIsPlaying(false);
     }
   }
 
   /* -------------------------------------------------------- */
-  /* VIDEO READY */
+  /* VIDEO EVENTS */
   /* -------------------------------------------------------- */
+
+  function handlePlay() {
+    setIsPlaying(true);
+  }
+
+  function handlePause() {
+    setIsPlaying(false);
+  }
+
+  function handleTimeUpdate() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    setCurrentTime(
+      video.currentTime
+    );
+  }
 
   function handleLoadedMetadata() {
     const video =
@@ -147,8 +173,6 @@ export default function LocalVideoPlayer({
     if (!video) {
       return;
     }
-
-    setLoading(false);
 
     if (
       Number.isFinite(
@@ -162,23 +186,89 @@ export default function LocalVideoPlayer({
   }
 
   function handleCanPlay() {
-    setLoading(false);
+    setReady(true);
+    setError("");
+  }
+
+  function handleEnded() {
+    setIsPlaying(false);
   }
 
   /* -------------------------------------------------------- */
-  /* TIME */
+  /* VIDEO ERROR */
   /* -------------------------------------------------------- */
 
-  function handleTimeUpdate() {
+  function handleVideoError() {
     const video =
       videoRef.current;
 
-    if (!video) {
+    const mediaError =
+      video?.error;
+
+    console.error(
+      "Local video playback error:",
+      {
+        code: mediaError?.code,
+        message: mediaError?.message,
+        networkState:
+          video?.networkState,
+        readyState:
+          video?.readyState,
+        fileName:
+          file?.name,
+        fileType:
+          file?.type,
+        fileSize:
+          file?.size,
+      }
+    );
+
+    setReady(false);
+    setIsPlaying(false);
+
+    if (!file) {
+      setError(
+        "No video file was selected."
+      );
+
       return;
     }
 
-    setCurrentTime(
-      video.currentTime
+    if (
+      mediaError?.code ===
+      MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+    ) {
+      setError(
+        `This browser cannot play "${file.name}". The video format or codec is not supported by this device/browser. MP4 videos encoded with H.264 video and AAC audio are the safest format for Android and web browsers.`
+      );
+
+      return;
+    }
+
+    if (
+      mediaError?.code ===
+      MediaError.MEDIA_ERR_DECODE
+    ) {
+      setError(
+        `The browser could not decode "${file.name}". The video codec may not be supported by this device.`
+      );
+
+      return;
+    }
+
+    if (
+      mediaError?.code ===
+      MediaError.MEDIA_ERR_NETWORK
+    ) {
+      setError(
+        `There was a problem loading "${file.name}".`
+      );
+
+      return;
+    }
+
+    setError(
+      `Unable to play "${file.name}". Check the browser console for the media error details.`
     );
   }
 
@@ -199,96 +289,97 @@ export default function LocalVideoPlayer({
     const value =
       Number(event.target.value);
 
-    video.currentTime = value;
+    video.currentTime =
+      value;
 
-    setCurrentTime(value);
+    setCurrentTime(
+      value
+    );
   }
 
   /* -------------------------------------------------------- */
-  /* VIDEO ERROR */
+  /* VOLUME */
   /* -------------------------------------------------------- */
 
-  function handleVideoError() {
-    setLoading(false);
-    setIsPlaying(false);
-
+  function handleVolume(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
     const video =
       videoRef.current;
 
-    const mediaError =
-      video?.error;
-
-    console.error(
-      "Local video error:",
-      mediaError
-    );
-
-    if (
-      mediaError?.code ===
-      MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
-    ) {
-      setError(
-        `This browser cannot play "${file.name}". MP4 videos encoded with H.264/AAC are the safest format for Android and web browsers.`
-      );
-
+    if (!video) {
       return;
     }
 
-    setError(
-      "Unable to play this video."
+    const value =
+      Number(event.target.value);
+
+    video.volume =
+      value;
+
+    setVolume(value);
+
+    if (value > 0) {
+      video.muted = false;
+      setMuted(false);
+    } else {
+      video.muted = true;
+      setMuted(true);
+    }
+  }
+
+  function toggleMute() {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    video.muted =
+      !video.muted;
+
+    setMuted(
+      video.muted
     );
   }
 
   /* -------------------------------------------------------- */
-  /* FORMAT TIME */
+  /* SKIP */
   /* -------------------------------------------------------- */
 
-  function formatTime(
-    seconds: number
-  ) {
+  function skip(seconds: number) {
+    const video =
+      videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
     if (
-      !Number.isFinite(seconds) ||
-      seconds < 0
+      !Number.isFinite(
+        video.duration
+      )
     ) {
-      return "0:00";
+      return;
     }
 
-    const total =
-      Math.floor(seconds);
-
-    const hours =
-      Math.floor(
-        total / 3600
+    const next =
+      Math.min(
+        Math.max(
+          video.currentTime +
+            seconds,
+          0
+        ),
+        video.duration
       );
 
-    const minutes =
-      Math.floor(
-        (total % 3600) / 60
-      );
+    video.currentTime =
+      next;
 
-    const secs =
-      total % 60;
-
-    if (hours > 0) {
-      return `${hours}:${String(
-        minutes
-      ).padStart(
-        2,
-        "0"
-      )}:${String(
-        secs
-      ).padStart(
-        2,
-        "0"
-      )}`;
-    }
-
-    return `${minutes}:${String(
-      secs
-    ).padStart(
-      2,
-      "0"
-    )}`;
+    setCurrentTime(
+      next
+    );
   }
 
   /* -------------------------------------------------------- */
@@ -330,10 +421,110 @@ export default function LocalVideoPlayer({
       }
     } catch (err) {
       console.warn(
-        "Fullscreen failed:",
+        "Fullscreen unavailable:",
         err
       );
     }
+  }
+
+  /* -------------------------------------------------------- */
+  /* FORMAT TIME */
+  /* -------------------------------------------------------- */
+
+  function formatTime(
+    seconds: number
+  ) {
+    if (
+      !Number.isFinite(
+        seconds
+      ) ||
+      seconds < 0
+    ) {
+      return "0:00";
+    }
+
+    const total =
+      Math.floor(seconds);
+
+    const hours =
+      Math.floor(
+        total / 3600
+      );
+
+    const minutes =
+      Math.floor(
+        (total % 3600) /
+          60
+      );
+
+    const secs =
+      total % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(
+        minutes
+      ).padStart(
+        2,
+        "0"
+      )}:${String(
+        secs
+      ).padStart(
+        2,
+        "0"
+      )}`;
+    }
+
+    return `${minutes}:${String(
+      secs
+    ).padStart(
+      2,
+      "0"
+    )}`;
+  }
+
+  /* -------------------------------------------------------- */
+  /* NO FILE */
+  /* -------------------------------------------------------- */
+
+  if (!file) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0d1118]">
+        <div className="flex items-center justify-between gap-4 px-4 py-4">
+          <div>
+            <h2 className="text-sm font-bold text-white">
+              {title}
+            </h2>
+
+            <p className="mt-1 text-xs text-red-400">
+              No video file was selected.
+            </p>
+          </div>
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="
+                tv-focus
+                tv-nav-item
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-xl
+                bg-white/5
+                text-gray-300
+              "
+              aria-label="Close player"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   /* -------------------------------------------------------- */
@@ -353,7 +544,7 @@ export default function LocalVideoPlayer({
           </h2>
 
           <p className="mt-1 truncate text-xs text-gray-500">
-            Playing from your device
+            {fileName}
           </p>
         </div>
 
@@ -393,71 +584,60 @@ export default function LocalVideoPlayer({
 
       {/* PLAYER */}
 
-      <div className="relative bg-black">
+      <div className="relative aspect-video w-full bg-black">
 
         {videoUrl && (
           <video
             ref={videoRef}
             src={videoUrl}
-            controls
             playsInline
             preload="auto"
-            className="
-              block
-              min-h-[240px]
-              max-h-[75vh]
-              w-full
-              bg-black
-              object-contain
-            "
-            onPlay={() =>
-              setIsPlaying(true)
-            }
-            onPause={() =>
-              setIsPlaying(false)
-            }
-            onTimeUpdate={
-              handleTimeUpdate
-            }
+            controls
+            controlsList="nodownload"
+            className="h-full w-full bg-black object-contain"
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={
               handleLoadedMetadata
             }
-            onCanPlay={
-              handleCanPlay
-            }
-            onError={
-              handleVideoError
-            }
+            onCanPlay={handleCanPlay}
+            onEnded={handleEnded}
+            onError={handleVideoError}
           />
         )}
 
-        {/* LOADING */}
-
-        {loading && !error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-
+        {!videoUrl && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-green-500/20 border-t-green-400" />
 
-              <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-green-400" />
-
-              <p className="mt-3 text-sm text-gray-400">
+              <p className="mt-3 text-sm text-gray-500">
                 Loading video...
               </p>
-
             </div>
-
           </div>
         )}
 
-        {/* ERROR */}
+        {videoUrl &&
+          !ready &&
+          !error && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
+              <div className="rounded-xl bg-black/70 px-5 py-3 text-center">
+                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-green-400" />
+
+                <p className="mt-2 text-xs text-gray-400">
+                  Preparing video...
+                </p>
+              </div>
+            </div>
+          )}
 
         {error && (
-          <div className="absolute inset-x-0 bottom-0 bg-red-950/95 p-4 text-center">
-
-            <p className="text-sm font-semibold text-red-300">
+          <div className="absolute inset-x-0 bottom-0 bg-red-950/95 p-4">
+            <p className="text-center text-sm font-semibold text-red-300">
               {error}
             </p>
-
           </div>
         )}
 
@@ -466,8 +646,6 @@ export default function LocalVideoPlayer({
       {/* CONTROLS */}
 
       <div className="bg-[#0d1118] p-4">
-
-        {/* PROGRESS */}
 
         {duration > 0 && (
           <input
@@ -482,54 +660,142 @@ export default function LocalVideoPlayer({
           />
         )}
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
 
-          <div className="flex items-center gap-3">
-
-            <button
-              type="button"
-              onClick={togglePlay}
-              className="
-                tv-focus
-                tv-nav-item
-                flex
-                min-h-[44px]
-                items-center
-                justify-center
-                rounded-xl
-                bg-green-500
-                px-5
-                font-bold
-                text-black
-              "
-            >
-              {isPlaying
-                ? "Pause"
-                : "Play"}
-            </button>
-
-            <span className="text-xs text-gray-500">
-              {formatTime(
-                currentTime
-              )}{" "}
-              /{" "}
-              {formatTime(
-                duration
-              )}
-            </span>
-
-          </div>
+          {/* PLAY */}
 
           <button
             type="button"
-            onClick={enterFullscreen}
+            onClick={togglePlay}
             className="
               tv-focus
               tv-nav-item
-              flex
               min-h-[44px]
-              items-center
-              justify-center
+              rounded-xl
+              bg-green-500
+              px-5
+              font-bold
+              text-black
+            "
+          >
+            {isPlaying
+              ? "Pause"
+              : "Play"}
+          </button>
+
+          {/* BACK */}
+
+          <button
+            type="button"
+            onClick={() =>
+              skip(-10)
+            }
+            className="
+              tv-focus
+              tv-nav-item
+              min-h-[44px]
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              px-4
+              text-sm
+              font-semibold
+              text-white
+            "
+          >
+            −10s
+          </button>
+
+          {/* FORWARD */}
+
+          <button
+            type="button"
+            onClick={() =>
+              skip(10)
+            }
+            className="
+              tv-focus
+              tv-nav-item
+              min-h-[44px]
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              px-4
+              text-sm
+              font-semibold
+              text-white
+            "
+          >
+            +10s
+          </button>
+
+          {/* TIME */}
+
+          <span className="text-xs text-gray-500">
+            {formatTime(
+              currentTime
+            )}{" "}
+            /{" "}
+            {formatTime(
+              duration
+            )}
+          </span>
+
+          {/* MUTE */}
+
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="
+              tv-focus
+              tv-nav-item
+              ml-auto
+              min-h-[44px]
+              rounded-xl
+              border
+              border-white/10
+              bg-white/5
+              px-4
+              text-sm
+              font-semibold
+              text-gray-300
+            "
+          >
+            {muted
+              ? "Unmute"
+              : "Mute"}
+          </button>
+
+          {/* VOLUME */}
+
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={
+              muted
+                ? 0
+                : volume
+            }
+            onChange={handleVolume}
+            className="w-24 accent-green-500"
+            aria-label="Volume"
+          />
+
+          {/* FULLSCREEN */}
+
+          <button
+            type="button"
+            onClick={
+              enterFullscreen
+            }
+            className="
+              tv-focus
+              tv-nav-item
+              min-h-[44px]
               rounded-xl
               border
               border-white/10
