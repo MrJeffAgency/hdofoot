@@ -20,8 +20,8 @@
   {
     "id": "Wazobia",
     "name": "hdofoot",
-    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
-    "group": "music",
+    "logo": "https://i.ibb.co/kVcNC0QW/Hdofoot.jpg",
+    "group": "wazobia",
     "stream": "https://wazobia.live:8333/channel/wmaxph.m3u8"
   },
 
@@ -37,7 +37,7 @@
   {
     "id": "BeIN",
     "name": "Sports",
-    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
+    "logo": "https://i.ibb.co/kVcNC0QW/Hdofoot.jpg",
     "group": "Sports",
     "stream": "https://bein-esp-klowdtv.amagi.tv/playlist.m3u8"
   },
@@ -52,16 +52,16 @@
   {
     "id": "Music",
     "name": "music",
-    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
+    "logo": "https://i.ibb.co/kVcNC0QW/Hdofoot.jpg",
     "group": "music",
     "stream": "https://stream.ecable.tv/afrobeats/index.m3u8"
   },
 
   {
-    "id": "pon",
+    "id": "News",
     "name": "boss",
-    "logo": "https://i.ibb.co/wZZBMLYj/f-O.png",
-    "group": "Me",
+    "logo": "https://i.ibb.co/kVcNC0QW/Hdofoot.jpg",
+    "group": "News",
     "stream": "https://hls-cdn77.xvideos-cdn.com/pIcLgL-X-HPsrXktzHp5aw==,1787544208/a749e90e-b455-4bfe-81d7-988591ebd674/0/hls.m3u8"
   },
 
@@ -71,7 +71,7 @@
  {
     "id": "Hdofoot",
     "name": "hdofoot",
-    "logo": "https://i.imgur.com/2JO5Y8c.png",
+    "logo": "https://i.ibb.co/kVcNC0QW/Hdofoot.jpg",
     "group": "hdofoot",
     "stream": "https://vod.wwe.com/vod/2026/,1080,720,540,432,360,288,/lfg320_bubbaray_harlemlewis_promofordigital.m3u8"
   },
@@ -79,18 +79,18 @@
 
 
   {
-    "id": "xxx",
-    "name": "pon",
-    "logo": "https://images.pluto.tv/channels/6452c814939a590008567a3b/colorLogoPNG_1731836283044.png",
-    "group": "Kids",
+    "id": "Man_u",
+    "name": "MU",
+    "logo": "https://i.ibb.co/kVcNC0QW/Hdofoot.jpg",
+    "group": "MU",
     "stream": "https://hls-cdn77.xvideos-cdn.com/Rv4RI1y8xufLoyF_WXMP5Q==,1787544901/479f8dec-73c3-423d-855c-6dc2b2605cdd/0/hls.m3u8"
   },
 
   {
-    "id": "x",
-    "name": "pon",
-    "logo": "https://images.pluto.tv/channels/6452c814939a590008567a3b/colorLogoPNG_1731836283044.png",
-    "group": "Kids",
+    "id": "Comedy",
+    "name": "comedy",
+    "logo": "https://i.ibb.co/kVcNC0QW/Hdofoot.jpg",
+    "group": "comedy",
     "stream": "https://hls-cdn77.xvideos-cdn.com/mJK1f-kVLnjGf18euP1F6g==,1787544710/84e84dd3-3966-408d-80f7-abcba8b42db7/0/hls.m3u8"
   }
 ]
