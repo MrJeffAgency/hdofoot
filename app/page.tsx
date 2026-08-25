@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Icon from "@/components/Icons";
 import { getFixtures } from "@/lib/football";
-
+import GoogleAd from "@/components/GoogleAd";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
