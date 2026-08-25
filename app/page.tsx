@@ -200,7 +200,7 @@ export default async function HomePage() {
               ))}
 
             </div>
-          ) : (
+                   ) : (
             <EmptyState
               title="No live matches right now"
               description="When a match goes live, it will appear here."
@@ -208,6 +208,11 @@ export default async function HomePage() {
           )}
 
         </section>
+
+        {/* GOOGLE ADSENSE */}
+        <div className="my-8 w-full">
+          <GoogleAd />
+        </div>
 
         {/* UPCOMING MATCHES */}
         <section className="mt-10 w-full">
