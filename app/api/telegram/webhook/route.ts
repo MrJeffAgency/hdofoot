@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordUser } from "@/lib/bot-store";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || "";
@@ -226,15 +227,11 @@ I'll try to help you find what you're looking for.`;
   if (message.includes("update") || message.includes("updates") || message.includes("latest version") || message.includes("new version") || message.includes("new update") || message.includes("🔄 hdofoot updates")) {
     return `🔄 HDOFOOT UPDATE
 
-For the latest HDOFOOT update, always use the official HDOFOOT download location.
+The latest HDOFOOT version is always available at:
 
-If you want the download information, press:
+🌐 https://hdofoot.vercel.app
 
-⬇️ Download
-
-or type:
-
-DOWNLOAD`;
+Open it to get the latest update. For a specific Android or Android TV download, tell me which device you're using.`;
   }
 
   if (message === "download" || message === "⬇️ download" || message.includes("download app") || message.includes("download hdofoot") || message.includes("where can i download hdofoot") || message.includes("where can i download") || message.includes("download the app")) {
@@ -375,6 +372,9 @@ A member of the support team will reply to you as soon as possible.`,
 async function handleUpdate(update: any) {
   const message = update.message;
   if (!message) return;
+
+  // Record every user who messages the bot (admin included).
+  await recordUser(message.from).catch(() => {});
 
   /* ADMIN MESSAGE */
   if (String(message.chat.id) === String(ADMIN_CHAT_ID)) {
