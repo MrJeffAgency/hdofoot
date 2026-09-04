@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "HDOFOOT",
@@ -47,6 +48,8 @@ export default function RootLayout({
 
         {/* PHONE + TABLET NAVIGATION */}
         <MobileNav />
+
+        <Analytics />
 
       </body>
     </html>
