@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: "HDOFOOT",
@@ -48,6 +49,7 @@ export default function RootLayout({
         {/* PHONE + TABLET NAVIGATION */}
         <MobileNav />
 
+        <SpeedInsights />
       </body>
     </html>
   );
